@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
+{{range(pluck "node" .data.search.edges) -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+{{end -}}
+{{tablerender}}'
+
+
+function query_help()
+{
+  cat << EOF
+
+Usage: gh my [issues|prs|reviews]
+  issues:  list issues in your personal repositories
+  prs:     list PRs in your persional repositories
+  reviews: list PRs where you've been asked for a review
+EOF
+ exit 1
+}
+
+function query_reviews() {
+  query='query {
+          search(query: "is:open is:pr review-requested:@me archived:false", type: ISSUE, first: 100) {
+            edges {
+              node {
+                ... on PullRequest {
+                  number
+                  title
+                  author {
+                     login
+                  }
+                  reviewDecision
+                  createdAt
+                  url
+                }
+              }
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+}
+
+function query_issues() {
+  query='query {
+          search(query: "is:open is:issue user:@me archived:false", type: ISSUE, first: 100) {
+            edges {
+              node {
+                ... on Issue {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  createdAt
+                  url
+                }
+              }
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+}
+
+function query_prs() {
+  query='query {
+          search(query: "is:open is:pr user:@me archived:false", type: ISSUE, first: 100) {
+            edges {
+              node {
+                ... on PullRequest {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  reviewDecision
+                  createdAt
+                  url
+                }
+              }
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+}
+
+ACTION=$1 || true
+ACTION=${ACTION:="help"}
+
+"query_${ACTION}"
+
