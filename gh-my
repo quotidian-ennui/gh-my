@@ -34,6 +34,10 @@ function query_reviews() {
                   reviewDecision
                   createdAt
                   url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
                 }
               }
             }
@@ -55,6 +59,10 @@ function query_issues() {
                   }
                   createdAt
                   url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
                 }
               }
             }
@@ -77,6 +85,10 @@ function query_prs() {
                   reviewDecision
                   createdAt
                   url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
                 }
               }
             }
