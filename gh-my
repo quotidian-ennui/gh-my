@@ -12,12 +12,53 @@ function query_help()
 {
   cat << EOF
 
-Usage: gh my [issues|prs|reviews]
-  issues:  list issues in your personal repositories
-  prs:     list PRs in your persional repositories
-  reviews: list PRs where you've been asked for a review
+Usage: gh my [issues|prs|reviews|workload]
+  issues:   list issues in your personal repositories
+  prs:      list PRs in your persional repositories
+  reviews:  list PRs where you've been asked for a review
+  workload: list PRs and issues where you are the assignee
+
 EOF
  exit 1
+}
+
+function query_workload() {
+  query='query {
+          search(query: "is:open assignee:@me archived:false", type: ISSUE, first: 100) {
+            edges {
+              node {
+                ... on PullRequest {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  reviewDecision
+                  createdAt
+                  url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
+                }
+                ... on Issue {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  createdAt
+                  url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
 }
 
 function query_reviews() {
