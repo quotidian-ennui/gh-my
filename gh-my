@@ -16,7 +16,7 @@ Usage: gh my [issues|prs|reviews|workload|deployments] [options]
   prs:         list PRs in your persional repositories
   reviews:     list PRs where you've been asked for a review
   workload:    list PRs and issues where you are the assignee
-  deployments: list deployments awaiting action
+  deployments: list deployments awaiting action on the default branch
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -27,8 +27,9 @@ EOF
 }
 
 function query_workload() {
-  query='query {
-          search(query: "is:open assignee:@me archived:false", type: ISSUE, first: 100) {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String){
+          search(query: "is:open assignee:@me archived:false",after: $endCursor, type: ISSUE, first: 50) {
             edges {
               node {
                 ... on PullRequest {
@@ -60,14 +61,19 @@ function query_workload() {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }'
   gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
 }
 
 function query_reviews() {
-  query='query {
-          search(query: "is:open is:pr review-requested:@me archived:false", type: ISSUE, first: 100) {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String){
+          search(query: "is:open is:pr review-requested:@me archived:false", after: $endCursor, type: ISSUE, first: 50) {
             edges {
               node {
                 ... on PullRequest {
@@ -86,14 +92,19 @@ function query_reviews() {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }'
   gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
 }
 
 function query_issues() {
-  query='query {
-          search(query: "is:open is:issue user:@me archived:false", type: ISSUE, first: 100) {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String) {
+          search(query: "is:open is:issue user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
             edges {
               node {
                 ... on Issue {
@@ -111,14 +122,19 @@ function query_issues() {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }'
   gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
 }
 
 function query_prs() {
-  query='query {
-          search(query: "is:open is:pr user:@me archived:false", type: ISSUE, first: 100) {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String) {
+          search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
             edges {
               node {
                 ... on PullRequest {
@@ -127,7 +143,6 @@ function query_prs() {
                   author {
                     login
                   }
-                  reviewDecision
                   createdAt
                   url
                   repository {
@@ -136,6 +151,10 @@ function query_prs() {
                   }
                 }
               }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
             }
           }
         }'
@@ -164,9 +183,10 @@ function query_deployments() {
 {{tablerow $repo (.databaseId | autocolor "green") .pendingDeploymentRequest.environment.name .pendingDeploymentRequest.currentUserCanApprove (.url | autocolor "cyan") (timeago .startedAt) -}}{{end -}}
 {{tablerender}}{{end -}}{{end -}}
 '
-
-  query="query {
-      search(query:\"$repo $org $topic\" type: REPOSITORY first: 100 ) {
+  queryString="$repo $org $topic"
+  # shellcheck disable=SC2016
+  query='query($queryString: String!, $endCursor: String) {
+      search(query: $queryString type: REPOSITORY, first: 100, after: $endCursor ) {
         edges {
           node {
             ... on Repository {
@@ -197,9 +217,13 @@ function query_deployments() {
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
-    }"
-  gh api graphql --paginate --raw-field query="$query" --template "$deploy_template"
+    }'
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$query" --template "$deploy_template"
 }
 
 ACTION=$1 || true
