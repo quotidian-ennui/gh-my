@@ -7,17 +7,21 @@ TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
 {{end -}}
 {{tablerender}}'
 
-
 function query_help()
 {
   cat << EOF
 
-Usage: gh my [issues|prs|reviews|workload]
-  issues:   list issues in your personal repositories
-  prs:      list PRs in your persional repositories
-  reviews:  list PRs where you've been asked for a review
-  workload: list PRs and issues where you are the assignee
+Usage: gh my [issues|prs|reviews|workload|deployments] [options]
+  issues:      list issues in your personal repositories
+  prs:         list PRs in your persional repositories
+  reviews:     list PRs where you've been asked for a review
+  workload:    list PRs and issues where you are the assignee
+  deployments: list deployments awaiting action
 
+Listing deployments needs more filters
+  -o : the organisation (e.g. -o my-company)
+  -t : the topic  (e.g. -o my-terraform-repos)
+  -r : a specific repository, but why not use gh run list instead?
 EOF
  exit 1
 }
@@ -138,8 +142,68 @@ function query_prs() {
   gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
 }
 
+function query_deployments() {
+  org=''
+  topic=''
+  repo=''
+  while getopts 'o:t:r:' flag; do
+    case "${flag}" in
+    o) org="org:${OPTARG}" ;;
+    t) topic="topic:${OPTARG}" ;;
+    r) repo="repo:${OPTARG}" ;;
+    *) query_help ;;
+    esac
+  done
+  if [[ "$org" == "" && $topic = "" && $repo = "" ]]; then
+    query_help
+  fi
+  # shellcheck disable=SC2016
+  deploy_template='{{tablerow "Repo" "ID" "Env" "Actionable" "URL" "When" -}}
+{{range(pluck "node" .data.search.edges) -}}{{ $repo:=.nameWithOwner -}}
+{{range(pluck "checkRuns" .defaultBranchRef.target.checkSuites.nodes) -}}{{range .nodes -}}
+{{tablerow $repo (.databaseId | autocolor "green") .pendingDeploymentRequest.environment.name .pendingDeploymentRequest.currentUserCanApprove (.url | autocolor "cyan") (timeago .startedAt) -}}{{end -}}
+{{tablerender}}{{end -}}{{end -}}
+'
+
+  query="query {
+      search(query:\"$repo $org $topic\" type: REPOSITORY first: 100 ) {
+        edges {
+          node {
+            ... on Repository {
+              nameWithOwner
+              defaultBranchRef {
+                target {
+                  ... on Commit {
+                    checkSuites(filterBy: {appId: 15368}, last: 1) {
+                      nodes {
+                        checkRuns(filterBy: {status: WAITING}, last: 1) {
+                          nodes {
+                            databaseId
+                            url
+                            startedAt
+                            pendingDeploymentRequest {
+                              environment {
+                                name
+                              }
+                              currentUserCanApprove
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }"
+  gh api graphql --paginate --raw-field query="$query" --template "$deploy_template"
+}
+
 ACTION=$1 || true
 ACTION=${ACTION:="help"}
-
-"query_${ACTION}"
+if [[ "$#" -ne "0" ]]; then shift; fi
+"query_${ACTION}" "$@"
 
