@@ -25,7 +25,7 @@ Listing deployments needs more filters
   -t : the topic  (e.g. -o my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
 
-Report generation allows pass in any string as the --date param.
+Report generation uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
 
 EOF
