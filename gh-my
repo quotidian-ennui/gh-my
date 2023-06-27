@@ -199,28 +199,41 @@ function internal::repo_deploys() {
 function internal::org_deploys() {
   queryString="$1"
   # shellcheck disable=SC2016
-  deploy_template='{{tablerow "Repo" "ID" "Env" "Actionable" "URL" "When" -}}
-{{range(pluck "node" .data.search.edges) -}}{{ $repo:=.nameWithOwner -}}
-{{range(pluck "checkRuns" .defaultBranchRef.target.checkSuites.nodes) -}}{{range .nodes -}}
-{{tablerow $repo (.databaseId | autocolor "green") .pendingDeploymentRequest.environment.name .pendingDeploymentRequest.currentUserCanApprove (.url | autocolor "cyan") (timeago .startedAt) -}}{{end -}}
-{{tablerender}}{{end -}}{{end -}}
+  deploy_template='{{tablerow "ID" "URL" "Branch" "Repo" "Env" "Actionable" "When" -}}
+{{range(pluck "node" .data.search.edges) -}}
+{{ $repo:=.nameWithOwner -}}{{ $branch:=.defaultBranchRef.name -}}
+{{range(pluck "workflowRun" .defaultBranchRef.target.checkSuites.nodes) -}}{{ $workflowId:= .databaseId -}}{{ $workflowRunURL:= .url -}}
+{{range .checkSuite.checkRuns.nodes -}}
+{{tablerow ($workflowId | autocolor "green")
+          ($workflowRunURL | autocolor "cyan")
+          ($branch | autocolor "yellow")
+          $repo
+          .pendingDeploymentRequest.environment.name
+          .pendingDeploymentRequest.currentUserCanApprove
+          (timeago .startedAt) -}}
+{{end -}}
+{{end -}}
+{{end -}}
 '
   # shellcheck disable=SC2016
-  query='query($queryString: String!, $endCursor: String) {
-      search(query: $queryString type: REPOSITORY, first: 100, after: $endCursor ) {
-        edges {
-          node {
-            ... on Repository {
-              nameWithOwner
-              defaultBranchRef {
-                target {
-                  ... on Commit {
-                    checkSuites(filterBy: {appId: 15368}, last: 1) {
-                      nodes {
+  query='query ($queryString: String!, $endCursor: String) {
+  search(query: $queryString, type: REPOSITORY, first: 100, after: $endCursor) {
+    edges {
+      node {
+        ... on Repository {
+          nameWithOwner
+          defaultBranchRef {
+            name
+            target {
+              ... on Commit {
+                checkSuites(filterBy: {appId: 15368}, last: 1) {
+                  nodes {
+                    workflowRun {
+                      databaseId
+                      url
+                      checkSuite {
                         checkRuns(filterBy: {status: WAITING}, last: 1) {
                           nodes {
-                            databaseId
-                            url
                             startedAt
                             pendingDeploymentRequest {
                               environment {
@@ -238,12 +251,14 @@ function internal::org_deploys() {
             }
           }
         }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
       }
-    }'
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
   gh api graphql --paginate -F queryString="$queryString" --raw-field query="$query" --template "$deploy_template"
 }
 
