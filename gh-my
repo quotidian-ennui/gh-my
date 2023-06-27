@@ -24,6 +24,10 @@ Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
   -t : the topic  (e.g. -o my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
+
+Report generation allows pass in any string as the --date param.
+  -d : the date string (default is "14 days ago")
+
 EOF
  exit 1
 }
@@ -198,7 +202,16 @@ function query_report() {
 {{end -}}
 {{tablerender}}
 '
-  queryString="author:@me updated:>=$(date --date="14 days ago" '+%Y-%m-%d') archived:false"
+
+  since='14 days ago'
+  while getopts 'd:' flag; do
+    case "${flag}" in
+    d) since="${OPTARG}" ;;
+    *) query_help ;;
+    esac
+  done
+
+  queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false"
   # shellcheck disable=SC2016
   query='query ($queryString: String!, $endCursor: String){
           search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
