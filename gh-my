@@ -67,7 +67,7 @@ function query_workload() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
 }
 
 function query_reviews() {
@@ -98,7 +98,7 @@ function query_reviews() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
 }
 
 function query_issues() {
@@ -128,7 +128,7 @@ function query_issues() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
 }
 
 function query_prs() {
@@ -158,7 +158,7 @@ function query_prs() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$query" --template "$TEMPLATE"
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
 }
 
 function query_deployments() {
@@ -259,7 +259,14 @@ function internal::org_deploys() {
     }
   }
 }'
-  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$query" --template "$deploy_template"
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$deploy_template"
+}
+
+
+# This is clearly a bout of premature optimisation and saving
+# a few newlines & spaces shouldn't be high on anyone's list
+function internal::compressQuery() {
+  echo "$1" | tr -d '\n'
 }
 
 
