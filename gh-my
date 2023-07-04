@@ -195,21 +195,27 @@ function query_deployments() {
 # Issues assigned to me will eventually have a PR created by me.
 # PR's assigned to me are a category mystery, why assigned as opposed to review.
 function query_report() {
-  report_template='
-{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}
+  report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
+  report_data='
 {{range(pluck "node" .data.search.edges) -}}
-{{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timeago .updatedAt)  -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timefmt "02-Jan" .updatedAt)  -}}
 {{end -}}
 {{tablerender}}
 '
-
+  include_headers=true
   since='14 days ago'
-  while getopts 'd:' flag; do
+  while getopts 'd:q' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
+    q) include_headers=false ;;
     *) query_help ;;
     esac
   done
+
+  report_template="$report_data"
+  if [[ "$include_headers" == "true" ]]; then
+    report_template="$report_header $report_data"
+  fi
 
   queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false"
   # shellcheck disable=SC2016
