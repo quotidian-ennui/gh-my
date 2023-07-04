@@ -11,17 +11,24 @@ function query_help()
 {
   cat << EOF
 
-Usage: gh my [issues|prs|reviews|workload|deployments] [options]
-  issues:      list issues in your personal repositories
-  prs:         list PRs in your persional repositories
-  reviews:     list PRs where you've been asked for a review
-  workload:    list PRs and issues where you are the assignee
-  deployments: list deployments awaiting action on the default branch
+Usage: gh my [issues|prs|reviews|workload|report|deployments] [options]
+  issues      : list issues in your personal repositories
+  prs         : list PRs in your persional repositories
+  reviews     : list PRs where you've been asked for a review
+  workload    : list PRs and issues where you are the assignee
+  deployments : list deployments awaiting action on the default branch
+  report      : show all the issues & prs you've worked on in the last 14 days
+                (because you have to tell people what you've done)
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
   -t : the topic  (e.g. -o my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
+
+Report generation uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
+  -q : omit the table headers
+
 EOF
  exit 1
 }
@@ -182,6 +189,75 @@ function query_deployments() {
     queryString="$org $topic"
     internal::org_deploys "$queryString"
   fi
+}
+
+# Get all the issues & PRs authored by me in the last 14 days.
+# Potentially shouldn't have issues, since issues created by me might be worked on by me
+# Issues assigned to me will eventually have a PR created by me.
+# PR's assigned to me are a category mystery, why assigned as opposed to review.
+function query_report() {
+  report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
+  report_data='
+{{range(pluck "node" .data.search.edges) -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timefmt "02-Jan" .updatedAt)  -}}
+{{end -}}
+{{tablerender}}
+'
+  include_headers=true
+  since='14 days ago'
+  while getopts 'd:q' flag; do
+    case "${flag}" in
+    d) since="${OPTARG}" ;;
+    q) include_headers=false ;;
+    *) query_help ;;
+    esac
+  done
+
+  report_template="$report_data"
+  if [[ "$include_headers" == "true" ]]; then
+    report_template="$report_header $report_data"
+  fi
+
+  queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false"
+  # shellcheck disable=SC2016
+  query='query ($queryString: String!, $endCursor: String){
+          search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
+            edges {
+              node {
+                ... on PullRequest {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  reviewDecision
+                  updatedAt
+                  url
+                  repository {
+                    nameWithOwner
+                  }
+                }
+                ... on Issue {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  updatedAt
+                  url
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }'
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$report_template"
 }
 
 # Query a specific repo for any deployments that are in a "waiting" state
