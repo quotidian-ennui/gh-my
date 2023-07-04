@@ -34,6 +34,7 @@ Listing deployments needs more filters
 
 Report generation uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
+  -q : omit the table headers
 
 ```
 
