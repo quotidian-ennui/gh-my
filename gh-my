@@ -218,7 +218,7 @@ function query_report() {
     report_template="$report_header $report_data"
   fi
 
-  queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false"
+  queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
   # shellcheck disable=SC2016
   query='query ($queryString: String!, $endCursor: String){
           search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
