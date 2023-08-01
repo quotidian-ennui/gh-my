@@ -135,7 +135,7 @@ function query_issues() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template $TEMPLATE
 }
 
 function query_prs() {
