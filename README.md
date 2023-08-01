@@ -18,7 +18,7 @@ gh extension install quotidian-ennui/gh-my
 ## Usage
 
 ```
-Usage: gh my [issues|prs|reviews|workload|report|deployments] [options]
+Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
   issues      : list issues in your personal repositories
   prs         : list PRs in your persional repositories
   reviews     : list PRs where you've been asked for a review
@@ -26,6 +26,7 @@ Usage: gh my [issues|prs|reviews|workload|report|deployments] [options]
   deployments : list deployments awaiting action on the default branch
   report      : show all the issues & prs you've worked on in the last 14 days
                 (because you have to tell people what you've done)
+  notifs      : list unread notifications
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -36,6 +37,9 @@ Report generation uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
   -q : omit the table headers
 
+Listing notifications can also mark them as read
+  -n : the ID to mark as read (-n 7235590448)
+  -a : Mark all notifications as read
 ```
 
 ```
