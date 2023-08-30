@@ -24,7 +24,7 @@ Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
   reviews     : list PRs where you've been asked for a review
   workload    : list PRs and issues where you are the assignee
   deployments : list deployments awaiting action on the default branch
-  report      : show all the issues & prs you've worked on in the last 14 days
+  report      : show all the issues & prs you've been involved in the last 14 days
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
 
@@ -36,6 +36,8 @@ Listing deployments needs more filters
 Report generation uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
   -q : omit the table headers
+  -a : use 'author' instead of 'involves'
+  -v : everything involving your user (e.g. where you're a CODEOWNER)
 
 Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
