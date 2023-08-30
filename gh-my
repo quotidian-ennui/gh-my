@@ -17,7 +17,7 @@ Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
   reviews     : list PRs where you've been asked for a review
   workload    : list PRs and issues where you are the assignee
   deployments : list deployments awaiting action on the default branch
-  report      : show all the issues & prs you've worked on in the last 14 days
+  report      : show all the issues & prs you've been involved in the last 14 days
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
 
@@ -29,6 +29,8 @@ Listing deployments needs more filters
 Report generation uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
   -q : omit the table headers
+  -a : use 'author' instead of 'involves'
+  -v : everything involving your user (e.g. where you're a CODEOWNER)
 
 Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
@@ -196,10 +198,7 @@ function query_deployments() {
   fi
 }
 
-# Get all the issues & PRs authored by me in the last 14 days.
-# Potentially shouldn't have issues, since issues created by me might be worked on by me
-# Issues assigned to me will eventually have a PR created by me.
-# PR's assigned to me are a category mystery, why assigned as opposed to review.
+# Get all the issues & PRs involving by me in the last 14 days.
 function query_report() {
   report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
   report_data='
@@ -208,11 +207,15 @@ function query_report() {
 {{end -}}
 {{tablerender}}
 '
+  # This catches PRs where I have been requested as a reviewer, but I did nothing (CODEOWNER)
+  user_filter="involves:@me -user-review-requested:@me"
   include_headers=true
   since='14 days ago'
-  while getopts 'd:q' flag; do
+  while getopts 'd:qav' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
+    a) user_filter="author:@me" ;;
+    v) user_filter="involves:@me" ;;
     q) include_headers=false ;;
     *) query_help ;;
     esac
@@ -222,8 +225,7 @@ function query_report() {
   if [[ "$include_headers" == "true" ]]; then
     report_template="$report_header $report_data"
   fi
-
-  queryString="author:@me updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
+  queryString="$user_filter updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
   # shellcheck disable=SC2016
   query='query ($queryString: String!, $endCursor: String){
           search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
