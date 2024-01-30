@@ -6,12 +6,19 @@ TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
 {{tablerow (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
 {{end -}}
 {{tablerender}}'
+GH_REST_API_VERSION="X-GitHub-Api-Version: 2022-11-28"
+GH_ACCEPT="Accept: application/vnd.github+json"
+export GH_PAGER="cat"
+
+function gh_api() {
+  gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
+}
 
 function query_help()
 {
   cat << EOF
 
-Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
+Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs|failures] [options]
   issues      : list issues in your personal repositories
   prs         : list PRs in your persional repositories
   reviews     : list PRs where you've been asked for a review
@@ -20,6 +27,7 @@ Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
   report      : show all the issues & prs you've been involved in the last 14 days
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
+  failures    : show workflow failures in your repos
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -31,6 +39,9 @@ Report generation uses 'date' so any gnu date string is valid
   -q : omit the table headers
   -a : use 'author' instead of 'involves'
   -v : everything involving your user (e.g. where you're a CODEOWNER)
+
+Failure generation uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
 
 Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
@@ -375,6 +386,29 @@ function internal::org_deploys() {
   gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$deploy_template"
 }
 
+# Query your repos for workflow failures
+query_failures() {
+  local since='14 days ago'
+  while getopts 'd:' flag; do
+    case "${flag}" in
+    d) since="${OPTARG}" ;;
+    esac
+  done
+  local since_epoch=$(date -d "$since" "+%s")
+  local jq_filter=$(cat <<-EOF
+  .workflow_runs[] |  select ((.created_at | fromdateiso8601) > $since_epoch) |
+  "\(.repository.name)|\(.name)|\(.html_url)|\(.created_at | fromdateiso8601 | strflocaltime("%d %b %Y"))"
+EOF
+  )
+  local gh_repos=$(gh repo list --json "nameWithOwner" -q ".[] | .nameWithOwner")
+  {
+    for gh_repo in $gh_repos; do
+      failed_workflows=$(gh_api "repos/$gh_repo/actions/runs?status=failure")
+      echo "$failed_workflows" | jq -r "$jq_filter"
+    done
+  } | column -s'|' -t -N "REPOSITORY,WORKFLOW,URL,WHEN"
+
+}
 
 # This is clearly a bout of premature optimisation and saving
 # a few newlines & spaces shouldn't be high on anyone's list
