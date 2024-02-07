@@ -387,7 +387,7 @@ ACTION=$1 || true
 ACTION=${ACTION:="help"}
 if [[ "$#" -ne "0" ]]; then shift; fi
 
-if [[ ! "${ACTION}" =~ ^issues|prs|reviews|workload|report|deployments|notifs|failures$ ]]; then
+if [[ ! "${ACTION}" =~ ^issues|prs|reviews|workload|report|deployments|notifs|failures|help$ ]]; then
   echo "Invalid action"
 
   query_help
