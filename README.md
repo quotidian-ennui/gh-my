@@ -7,7 +7,10 @@ This is an extension for [GitHub CLI](https://cli.github.com/) that just lists a
 ## Installation
 
 Prerequisites:
- * [GitHub CLI](https://cli.github.com/) is already installed and authenticated
+ - [GitHub CLI](https://cli.github.com/) is already installed and authenticated
+ - [`jq`](https://stedolan.github.io/jq/) is installed
+ - `column` which is a standard linux tool; already present in _git+bash_ on windows; via _util-linux_ on ubuntu.
+ - `date` needs to support the `--date "14 days ago"` style option.
 
 To install this extension:
 
@@ -18,7 +21,7 @@ gh extension install quotidian-ennui/gh-my
 ## Usage
 
 ```
-Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
+Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs|failures] [options]
   issues      : list issues in your personal repositories
   prs         : list PRs in your persional repositories
   reviews     : list PRs where you've been asked for a review
@@ -27,6 +30,7 @@ Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs] [options]
   report      : show all the issues & prs you've been involved in the last 14 days
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
+  failures    : show workflow failures in your personal repositories in the last 14 days
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -38,6 +42,9 @@ Report generation uses 'date' so any gnu date string is valid
   -q : omit the table headers
   -a : use 'author' instead of 'involves'
   -v : everything involving your user (e.g. where you're a CODEOWNER)
+
+Failure generation uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
 
 Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
