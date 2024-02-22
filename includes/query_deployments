@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+function query_deployments() {
+  org=''
+  topic=''
+  repo=''
+  while getopts 'o:t:r:' flag; do
+    case "${flag}" in
+    o) org="org:${OPTARG}" ;;
+    t) topic="topic:${OPTARG}" ;;
+    r) repo="${OPTARG}" ;;
+    *) query_help ;;
+    esac
+  done
+  if [[ "$org" == "" && $topic = "" && $repo = "" ]]; then
+    query_help
+  fi
+  if [[ $repo != "" ]]; then
+    internal::repo_deploys "$repo"
+  else
+    queryString="$org $topic"
+    internal::org_deploys "$queryString"
+  fi
+}
+
+# Query a specific repo for any deployments that are in a "waiting" state
+function internal::repo_deploys() {
+  repo="$1"
+  # shellcheck disable=SC2016
+  deploy_template='{{tablerow "ID" "URL" "Branch" "When" -}}
+{{ range . -}}
+{{tablerow (.databaseId | autocolor "green") (.url | autocolor "cyan") (.headBranch | autocolor "yellow") (timeago .startedAt) -}}
+{{end -}}'
+  gh run list --repo "$repo" --json "databaseId,url,headBranch,startedAt" --template "$deploy_template" -s "waiting"
+}
+
+# Query the org, (filtering by topic) listing deploymens in a waiting state that on the default branch
+function internal::org_deploys() {
+  queryString="$1"
+  # shellcheck disable=SC2016
+  deploy_template='{{tablerow "ID" "URL" "Branch" "Repo" "Env" "Actionable" "When" -}}
+{{range(pluck "node" .data.search.edges) -}}
+{{ $repo:=.nameWithOwner -}}{{ $branch:=.defaultBranchRef.name -}}
+{{range(pluck "workflowRun" .defaultBranchRef.target.checkSuites.nodes) -}}{{ $workflowId:= .databaseId -}}{{ $workflowRunURL:= .url -}}
+{{range .checkSuite.checkRuns.nodes -}}
+{{tablerow ($workflowId | autocolor "green")
+          ($workflowRunURL | autocolor "cyan")
+          ($branch | autocolor "yellow")
+          $repo
+          .pendingDeploymentRequest.environment.name
+          .pendingDeploymentRequest.currentUserCanApprove
+          (timeago .startedAt) -}}
+{{end -}}
+{{end -}}
+{{end -}}
+'
+  # shellcheck disable=SC2016
+  query='query ($queryString: String!, $endCursor: String) {
+  search(query: $queryString, type: REPOSITORY, first: 100, after: $endCursor) {
+    edges {
+      node {
+        ... on Repository {
+          nameWithOwner
+          defaultBranchRef {
+            name
+            target {
+              ... on Commit {
+                checkSuites(filterBy: {appId: 15368}, last: 1) {
+                  nodes {
+                    workflowRun {
+                      databaseId
+                      url
+                      checkSuite {
+                        checkRuns(filterBy: {status: WAITING}, last: 1) {
+                          nodes {
+                            startedAt
+                            pendingDeploymentRequest {
+                              environment {
+                                name
+                              }
+                              currentUserCanApprove
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$deploy_template"
+}

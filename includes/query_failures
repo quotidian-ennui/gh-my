@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Query your repos for workflow failures
+query_failures() {
+  local since
+  local since_dateonly
+  local jq_filter
+  local gh_repos
+  since='14 days ago'
+  while getopts 'd:' flag; do
+    case "${flag}" in
+    d) since="${OPTARG}" ;;
+    *) ;;
+    esac
+  done
+  since_dateonly=$(date --date="$since" '+%Y-%m-%d')
+  jq_filter='.workflow_runs[] | "\(.repository.name)|\(.name)|\(.html_url)|\(.created_at | fromdateiso8601 | strflocaltime("%d %b %Y"))"'
+  gh_repos=$(gh repo list --json "nameWithOwner" -q ".[] | .nameWithOwner")
+  {
+    for gh_repo in $gh_repos; do
+      failed_workflows=$(gh_api "repos/$gh_repo/actions/runs?status=failure&created=>$since_dateonly")
+      echo "$failed_workflows" | jq -r "$jq_filter"
+    done
+  } | column -s'|' -t -N "REPOSITORY,WORKFLOW,URL,WHEN"
+}

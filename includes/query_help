@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+function query_help()
+{
+  cat << EOF
+
+Usage: gh my [$ACTION_LIST] [options]
+  issues      : list issues in your personal repositories
+  prs         : list PRs in your persional repositories
+  reviews     : list PRs where you've been asked for a review
+  workload    : list PRs and issues where you are the assignee
+  deployments : list deployments awaiting action on the default branch
+  report      : show all the issues & prs you've been involved in the last 14 days
+                (because you have to tell people what you've done)
+  notifs      : list unread notifications
+  failures    : show workflow failures in your personal repositories in the last 14 days
+
+Listing deployments needs more filters
+  -o : the organisation (e.g. -o my-company)
+  -t : the topic  (e.g. -o my-terraform-repos)
+  -r : a specific repository, but why not use gh run list instead?
+
+Report generation uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
+  -q : omit the table headers
+  -a : use 'author' instead of 'involves'
+  -v : everything involving your user (e.g. where you're a CODEOWNER)
+
+Failure generation uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
+
+Listing notifications can also mark them as read
+  -n : the ID to mark as read (-n 7235590448)
+  -a : Mark all notifications as read
+
+EOF
+ exit 1
+}

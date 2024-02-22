@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+function query_issues() {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String) {
+          search(query: "is:open is:issue user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
+            edges {
+              node {
+                ... on Issue {
+                  number
+                  title
+                  author {
+                    login
+                  }
+                  createdAt
+                  url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+}

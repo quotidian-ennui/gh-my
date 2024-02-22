@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+function query_reviews() {
+  # shellcheck disable=SC2016
+  query='query ($endCursor: String){
+          search(query: "is:open is:pr review-requested:@me archived:false", after: $endCursor, type: ISSUE, first: 50) {
+            edges {
+              node {
+                ... on PullRequest {
+                  number
+                  title
+                  author {
+                     login
+                  }
+                  reviewDecision
+                  createdAt
+                  url
+                  repository {
+                    nameWithOwner
+                    name
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }'
+  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+}
