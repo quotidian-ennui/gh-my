@@ -21,7 +21,7 @@ gh extension install quotidian-ennui/gh-my
 ## Usage
 
 ```
-Usage: gh my [issues|prs|reviews|workload|report|deployments|notifs|failures] [options]
+Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|workload] [options]
   issues      : list issues in your personal repositories
   prs         : list PRs in your persional repositories
   reviews     : list PRs where you've been asked for a review
