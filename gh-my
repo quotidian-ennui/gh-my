@@ -18,7 +18,7 @@ function gh_api() {
 }
 
 function source_actions() {
-  for f in "$BASEDIR"/includes/*; do
+  for f in "$BASEDIR"/includes/query_*; do
     #shellcheck disable=SC1090
     source "$f"
     name=$(basename "$f")
