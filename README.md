@@ -40,7 +40,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
-  -t : the topic  (e.g. -o my-terraform-repos)
+  -t : the topic  (e.g. -t my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
 
 'report' uses 'date' so any gnu date string is valid
