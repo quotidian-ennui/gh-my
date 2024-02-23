@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+function query_notifs() {
+  notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" -}}
+{{ range . -}}
+{{tablerow (.id | autocolor "green") (.reason | autocolor "cyan") (timeago .updated_at) (.repository.full_name) (hyperlink "https://github.com/notifications" (.subject.title | autocolor "yellow")) -}}
+{{end -}}'
+
+  notif_id=''
+  mark_all_as_read=''
+  while getopts 'n:a' flag; do
+    case "${flag}" in
+    n) notif_id="${OPTARG}" ;;
+    a) mark_all_as_read="yes" ;;
+    *) query_help ;;
+    esac
+  done
+
+  if [[ -z "$notif_id" && -z "$mark_all_as_read" ]]; then
+    # Show notifications
+    gh api notifications --template "$notif_template"
+  fi
+  if [[ -n "$notif_id" ]]; then
+    gh api "notifications/threads/$notif_id" --method PATCH --silent
+  fi
+  if [[ -n "$mark_all_as_read" ]]; then
+    gh api "notifications" --method PUT --silent
+  fi
+
+}
