@@ -28,7 +28,7 @@ function source_actions() {
 }
 
 function internal::compressQuery() {
-  echo "$1" | tr -d '\n'
+  echo "$1" | tr -s ' ' | tr -d '\n'
 }
 
 source_actions
