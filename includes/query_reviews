@@ -4,6 +4,15 @@ function query_reviews() {
 
   local format=""
   local as_json='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "url": .url }'
+
+  for arg in "$@"; do
+    shift
+    case "$arg" in
+      --jsonlines|--json) set -- "$@" '-j';;
+      *) set -- "$@" "$arg";;
+    esac
+  done
+
   while getopts 'j' flag; do
     case "${flag}" in
     j) format="json" ;;
