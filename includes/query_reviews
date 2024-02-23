@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 
 function query_reviews() {
+
+  local format=""
+  local as_json='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "url": .url }'
+  while getopts 'j' flag; do
+    case "${flag}" in
+    j) format="json" ;;
+    *) query_help ;;
+    esac
+  done
+
   # shellcheck disable=SC2016
-  query='query ($endCursor: String){
+  local query='query ($endCursor: String){
           search(query: "is:open is:pr review-requested:@me archived:false", after: $endCursor, type: ISSUE, first: 50) {
             edges {
               node {
@@ -28,5 +38,12 @@ function query_reviews() {
             }
           }
         }'
-  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+  case $format in
+  json)
+    gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --jq "$as_json" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template="$TEMPLATE"
+    ;;
+  esac
 }
