@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+function query_vulns() {
+
+  local whoami
+  whoami=$(gh config get user -h github.com)
+  while getopts 'o:' flag; do
+    case "${flag}" in
+    o) whoami="${OPTARG}" ;;
+    *) query_help ;;
+    esac
+  done
+
+  local queryString="owner:$whoami archived:false"
+  # shellcheck disable=SC2016
+  local template='{{tablerow "Repository" "Package" "URL" "Created" -}}
+{{range(pluck "node" .data.search.edges) -}}
+{{ $repo:=.nameWithOwner -}}
+{{range .vulnerabilityAlerts.nodes -}}
+{{ $url:= printf "https://github.com/%s/security/dependabot/%v" $repo .number -}}
+{{tablerow ($repo | autocolor "green")
+          (.securityVulnerability.package.name | autocolor "cyan")
+          ($url | autocolor "yellow")
+          (timeago .createdAt) -}}
+{{end -}}
+{{end -}}
+'
+  # shellcheck disable=SC2016
+  local query='query($searchQuery: String!, $endCursor: String) {
+  search(query: $searchQuery, type: REPOSITORY, first: 100, after: $endCursor) {
+    edges {
+      node {
+        ... on Repository {
+          nameWithOwner
+          vulnerabilityAlerts(first: 100, states:OPEN) {
+            nodes {
+              createdAt
+              vulnerableManifestPath
+              vulnerableManifestFilename
+              number
+              securityVulnerability {
+                package {
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template="$template"
+}
+
+

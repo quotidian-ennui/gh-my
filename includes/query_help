@@ -14,6 +14,7 @@ Usage: gh my [$ACTION_LIST] [options]
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
   failures    : show workflow failures in your personal repositories in the last 14 days
+  vulns       : show vulnerability alerts from dependabot in your personal repositories
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -33,6 +34,10 @@ Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
   -a : Mark all notifications as read
 
+Listing vulnerabilities can have more filters
+  -o : the owner (e.g. -o my-company | -o my-user)
+       default is whatever 'gh config get user -h github.com' returns
+       ** Viewing security alerts implies permissions
 EOF
  exit 1
 }
