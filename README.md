@@ -21,7 +21,7 @@ gh extension install quotidian-ennui/gh-my
 ## Usage
 
 ```
-Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|workload] [options]
+Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
   issues      : list issues in your personal repositories
   prs         : list PRs in your persional repositories
   reviews     : list PRs where you've been asked for a review
@@ -31,6 +31,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|workloa
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
   failures    : show workflow failures in your personal repositories in the last 14 days
+  vulns       : show vulnerability alerts from dependabot in your personal repositories
 
 Listing deployments needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -49,6 +50,11 @@ Failure generation uses 'date' so any gnu date string is valid
 Listing notifications can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
   -a : Mark all notifications as read
+
+Listing vulnerabilities can have more filters
+  -o : the owner (e.g. -o my-company | -o my-user)
+       default is whatever 'gh config get user -h github.com' returns
+       ** Viewing security alerts implies permissions
 ```
 
 ```
