@@ -33,25 +33,30 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   failures    : show workflow failures in your personal repositories in the last 14 days
   vulns       : show vulnerability alerts from dependabot in your personal repositories
 
-Listing deployments needs more filters
+'reviews' can have its output in JSON format
+  -j : output each row as a JSON object.
+       This is useful if you want to script & pipe the output.
+       (--jsonlines is also accepted)
+
+'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
-  -t : the topic  (e.g. -o my-terraform-repos)
+  -t : the topic  (e.g. -t my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
 
-Report generation uses 'date' so any gnu date string is valid
+'report' uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
   -q : omit the table headers
   -a : use 'author' instead of 'involves'
   -v : everything involving your user (e.g. where you're a CODEOWNER)
 
-Failure generation uses 'date' so any gnu date string is valid
+'failures' uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
 
-Listing notifications can also mark them as read
+'notifs' can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
   -a : Mark all notifications as read
 
-Listing vulnerabilities can have more filters
+'vulns' can have more filters
   -o : the owner (e.g. -o my-company | -o my-user)
        default is whatever 'gh config get user -h github.com' returns
        ** Viewing security alerts implies permissions
