@@ -6,8 +6,8 @@ query_notifs() {
 {{tablerow (.id | autocolor "green") (.reason | autocolor "cyan") (timeago .updated_at) (.repository.full_name) (hyperlink "https://github.com/notifications" (.subject.title | autocolor "yellow")) -}}
 {{end -}}'
 
-  notif_id=''
-  mark_all_as_read=''
+  local notif_id=''
+  local mark_all_as_read=''
   while getopts 'n:a' flag; do
     case "${flag}" in
     n) notif_id="${OPTARG}" ;;
