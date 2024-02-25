@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
 # Get all the issues & PRs involving by me in the last 14 days.
-function query_report() {
-  report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
-  report_data='
+query_report() {
+  local report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
+  local report_data='
 {{range(pluck "node" .data.search.edges) -}}
 {{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timefmt "02-Jan" .updatedAt)  -}}
 {{end -}}
 {{tablerender}}
 '
   # This catches PRs where I have been requested as a reviewer, but I did nothing (CODEOWNER)
-  user_filter="involves:@me -user-review-requested:@me"
-  include_headers=true
-  since='14 days ago'
+  local user_filter="involves:@me -user-review-requested:@me"
+  local include_headers=true
+  local since='14 days ago'
+  local queryString
   while getopts 'd:qav' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
@@ -23,50 +24,49 @@ function query_report() {
     esac
   done
 
-  report_template="$report_data"
+  local report_template="$report_data"
   if [[ "$include_headers" == "true" ]]; then
     report_template="$report_header $report_data"
   fi
   queryString="$user_filter updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
   # shellcheck disable=SC2016
-  query='query ($queryString: String!, $endCursor: String){
-          search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
-            edges {
-              node {
-                ... on PullRequest {
-                  number
-                  title
-                  author {
-                    login
-                  }
-                  reviewDecision
-                  updatedAt
-                  url
-                  repository {
-                    nameWithOwner
-                  }
-                }
-                ... on Issue {
-                  number
-                  title
-                  author {
-                    login
-                  }
-                  updatedAt
-                  url
-                  repository {
-                    nameWithOwner
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
+  local query='
+query ($queryString: String!, $endCursor: String){
+  search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
+    edges {
+      node {
+        ... on PullRequest {
+          number
+          title
+          author {
+            login
           }
-        }'
-  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$report_template"
+          reviewDecision
+          updatedAt
+          url
+          repository {
+            nameWithOwner
+          }
+        }
+        ... on Issue {
+          number
+          title
+          author {
+            login
+          }
+          updatedAt
+          url
+          repository {
+            nameWithOwner
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$report_template"
 }
-
-

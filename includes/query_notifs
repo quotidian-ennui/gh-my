@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-function query_notifs() {
-  notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" -}}
+query_notifs() {
+  local notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" -}}
 {{ range . -}}
 {{tablerow (.id | autocolor "green") (.reason | autocolor "cyan") (timeago .updated_at) (.repository.full_name) (hyperlink "https://github.com/notifications" (.subject.title | autocolor "yellow")) -}}
 {{end -}}'

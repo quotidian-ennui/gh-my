@@ -1,31 +1,33 @@
 #!/usr/bin/env bash
 
-function query_prs() {
+query_prs() {
   # shellcheck disable=SC2016
-  query='query ($endCursor: String) {
-          search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
-            edges {
-              node {
-                ... on PullRequest {
-                  number
-                  title
-                  author {
-                    login
-                  }
-                  createdAt
-                  url
-                  repository {
-                    nameWithOwner
-                    name
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
+  local query='
+query ($endCursor: String) {
+  search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
+    edges {
+      node {
+        ... on PullRequest {
+          number
+          title
+          author {
+            login
           }
-        }'
-  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+          createdAt
+          url
+          repository {
+            nameWithOwner
+            name
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  helper::std_output_format "$@"
+  helper::std_graphql "$query"
 }

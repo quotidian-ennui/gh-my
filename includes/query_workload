@@ -1,44 +1,46 @@
 #!/usr/bin/env bash
-function query_workload() {
+query_workload() {
   # shellcheck disable=SC2016
-  query='query ($endCursor: String){
-          search(query: "is:open assignee:@me archived:false",after: $endCursor, type: ISSUE, first: 50) {
-            edges {
-              node {
-                ... on PullRequest {
-                  number
-                  title
-                  author {
-                    login
-                  }
-                  reviewDecision
-                  createdAt
-                  url
-                  repository {
-                    nameWithOwner
-                    name
-                  }
-                }
-                ... on Issue {
-                  number
-                  title
-                  author {
-                    login
-                  }
-                  createdAt
-                  url
-                  repository {
-                    nameWithOwner
-                    name
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
+  local query='
+query ($endCursor: String){
+  search(query: "is:open assignee:@me archived:false",after: $endCursor, type: ISSUE, first: 50) {
+    edges {
+      node {
+        ... on PullRequest {
+          number
+          title
+          author {
+            login
           }
-        }'
-  gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template "$TEMPLATE"
+          reviewDecision
+          createdAt
+          url
+          repository {
+            nameWithOwner
+            name
+          }
+        }
+        ... on Issue {
+          number
+          title
+          author {
+            login
+          }
+          createdAt
+          url
+          repository {
+            nameWithOwner
+            name
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  helper::std_output_format "$@"
+  helper::std_graphql "$query"
 }

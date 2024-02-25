@@ -1,23 +1,10 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-#shellcheck disable=SC2034
-TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
-{{range(pluck "node" .data.search.edges) -}}
-{{tablerow (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
-{{end -}}
-{{tablerender}}'
-GH_REST_API_VERSION="X-GitHub-Api-Version: 2022-11-28"
-GH_ACCEPT="Accept: application/vnd.github+json"
 BASEDIR=$(dirname "$0")
-
 ACTION_LIST=""
 
-function gh_api() {
-  gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
-}
-
-function source_actions() {
+source_actions() {
   for f in "$BASEDIR"/includes/query_*; do
     #shellcheck disable=SC1090
     source "$f"
@@ -27,10 +14,8 @@ function source_actions() {
   ACTION_LIST=${ACTION_LIST%?}
 }
 
-function internal::compressQuery() {
-  echo "$1" | tr -s ' ' | tr -d '\n'
-}
-
+#shellcheck disable=SC1091
+source "$BASEDIR/includes/helper_functions"
 source_actions
 ACTION=$1 || true
 ACTION=${ACTION:="help"}
@@ -41,5 +26,13 @@ if [[ ! "${ACTION}" =~ ^$ACTION_LIST$ ]]; then
   query_help
 fi
 
-"query_${ACTION}" "$@"
+# Turn 'global' longopts into short
+for arg in "$@"; do
+  shift
+  case "$arg" in
+  --jsonlines | --json) set -- "$@" '-j' ;;
+  *) set -- "$@" "$arg" ;;
+  esac
+done
 
+"query_${ACTION}" "$@"

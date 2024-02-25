@@ -17,7 +17,7 @@ query_failures() {
   gh_repos=$(gh repo list --json "nameWithOwner" -q ".[] | .nameWithOwner")
   {
     for gh_repo in $gh_repos; do
-      failed_workflows=$(gh_api "repos/$gh_repo/actions/runs?status=failure&created=>$since_dateonly")
+      failed_workflows=$(helper::gh_api "repos/$gh_repo/actions/runs?status=failure&created=>$since_dateonly")
       echo "$failed_workflows" | jq -r "$jq_filter"
     done
   } | column -s'|' -t -N "REPOSITORY,WORKFLOW,URL,WHEN"

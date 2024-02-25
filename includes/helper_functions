@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+GH_REST_API_VERSION="X-GitHub-Api-Version: 2022-11-28"
+GH_ACCEPT="Accept: application/vnd.github+json"
+
+#shellcheck disable=SC2034
+STD_TABLE_TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
+{{range(pluck "node" .data.search.edges) -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+{{end -}}
+{{tablerender}}'
+
+STD_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "url": .url, "createdAt": .createdAt}'
+STD_OUTPUT_FORMAT="table"
+
+helper::gh_api() {
+  gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
+}
+
+helper::compressQuery() {
+  echo "$1" | tr -s ' ' | tr -d '\n'
+}
+
+helper::std_output_format() {
+  local query="$1"
+  while getopts 'j' flag; do
+    case "${flag}" in
+    j) STD_OUTPUT_FORMAT="json" ;;
+    *) query_help ;;
+    esac
+  done
+}
+
+helper::std_graphql() {
+  local query="$1"
+  case $STD_OUTPUT_FORMAT in
+  json)
+    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --jq "$STD_JQ_FILTER" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --template="$STD_TABLE_TEMPLATE"
+    ;;
+  esac
+}
