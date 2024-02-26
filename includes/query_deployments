@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-function query_deployments() {
-  org=''
-  topic=''
-  repo=''
+query_deployments() {
+  local org=''
+  local topic=''
+  local repo=''
   while getopts 'o:t:r:' flag; do
     case "${flag}" in
     o) org="org:${OPTARG}" ;;
@@ -24,10 +24,10 @@ function query_deployments() {
 }
 
 # Query a specific repo for any deployments that are in a "waiting" state
-function internal::repo_deploys() {
-  repo="$1"
+internal::repo_deploys() {
+  local repo="$1"
   # shellcheck disable=SC2016
-  deploy_template='{{tablerow "ID" "URL" "Branch" "When" -}}
+  local deploy_template='{{tablerow "ID" "URL" "Branch" "When" -}}
 {{ range . -}}
 {{tablerow (.databaseId | autocolor "green") (.url | autocolor "cyan") (.headBranch | autocolor "yellow") (timeago .startedAt) -}}
 {{end -}}'
@@ -35,10 +35,10 @@ function internal::repo_deploys() {
 }
 
 # Query the org, (filtering by topic) listing deploymens in a waiting state that on the default branch
-function internal::org_deploys() {
-  queryString="$1"
+internal::org_deploys() {
+  local queryString="$1"
   # shellcheck disable=SC2016
-  deploy_template='{{tablerow "ID" "URL" "Branch" "Repo" "Env" "Actionable" "When" -}}
+  local deploy_template='{{tablerow "ID" "URL" "Branch" "Repo" "Env" "Actionable" "When" -}}
 {{range(pluck "node" .data.search.edges) -}}
 {{ $repo:=.nameWithOwner -}}{{ $branch:=.defaultBranchRef.name -}}
 {{range(pluck "workflowRun" .defaultBranchRef.target.checkSuites.nodes) -}}{{ $workflowId:= .databaseId -}}{{ $workflowRunURL:= .url -}}
@@ -55,7 +55,8 @@ function internal::org_deploys() {
 {{end -}}
 '
   # shellcheck disable=SC2016
-  query='query ($queryString: String!, $endCursor: String) {
+  query='
+query ($queryString: String!, $endCursor: String) {
   search(query: $queryString, type: REPOSITORY, first: 100, after: $endCursor) {
     edges {
       node {
@@ -98,5 +99,5 @@ function internal::org_deploys() {
     }
   }
 }'
-  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(internal::compressQuery "$query")" --template "$deploy_template"
+  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$deploy_template"
 }

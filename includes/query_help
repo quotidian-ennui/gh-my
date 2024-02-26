@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-function query_help()
-{
-  cat << EOF
+query_help() {
+  cat <<EOF
 
 Usage: gh my [$ACTION_LIST] [options]
   issues      : list issues in your personal repositories
@@ -16,7 +15,10 @@ Usage: gh my [$ACTION_LIST] [options]
   failures    : show workflow failures in your personal repositories in the last 14 days
   vulns       : show vulnerability alerts from dependabot in your personal repositories
 
+'issues' can have its output in JSON format
+'prs' can have its output in JSON format
 'reviews' can have its output in JSON format
+'workload' can have its output in JSON format
   -j : output each row as a JSON object.
        This is useful if you want to script & pipe the output.
        (--jsonlines is also accepted)
@@ -44,5 +46,5 @@ Usage: gh my [$ACTION_LIST] [options]
        default is whatever 'gh config get user -h github.com' returns
        ** Viewing security alerts implies permissions
 EOF
- exit 1
+  exit 1
 }

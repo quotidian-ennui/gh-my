@@ -33,7 +33,10 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   failures    : show workflow failures in your personal repositories in the last 14 days
   vulns       : show vulnerability alerts from dependabot in your personal repositories
 
+'issues' can have its output in JSON format
+'prs' can have its output in JSON format
 'reviews' can have its output in JSON format
+'workload' can have its output in JSON format
   -j : output each row as a JSON object.
        This is useful if you want to script & pipe the output.
        (--jsonlines is also accepted)
@@ -62,10 +65,13 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
        ** Viewing security alerts implies permissions
 ```
 
-```
+```bash
 bsh ❯ gh my issues
 Num  Title                  Who     URL                                                          When
 #1   能增加Apple芯片支持吗？  binge6  https://github.com/quotidian-ennui/homebrew-zulufx/issues/1  2 years ago
+
+bsh ❯ gh my issues -j
+{"createdAt":"2021-03-02T01:18:10Z","login":"binge6","number":1,"title":"能增加Apple芯片支持吗？","url":"https://github.com/quotidian-ennui/homebrew-zulufx/issues/1"}
 ```
 
 > I have ignored the above issue since it was raised, I don't have a Mac any more, and certainly not one that is M1/M2 etc. If someone wants to add in arm64 support for zulufx then please do so, and comment on this issue! I'm a little bit embarrassed that I've never dealt with it.
@@ -74,7 +80,7 @@ Num  Title                  Who     URL                                         
 
 Because of https://github.com/quotidian-ennui/gh-my/issues/2 you can now list deployments that are waiting for someone to approve them (perhaps you're doing something like this : https://warman.io/blog/2023/03/fixing-automating-terraform-with-github-actions/). The usage model is geared towards you filtering either explicitly by repository (in which case you can probably do `gh run list -R <repo> -s "waiting"` instead, but is present for completeness) or by organisation + topic.
 
-```
+```bash
 bsh ❯ gh my deployments -o telus-agcg -t tpm-demeter
 ID          URL                                                                               Branch  Repo                                   Env            Actionable  When
 5357752484  https://github.com/telus-agcg/tpm-demeter-terraform-test/actions/runs/5357752484  main    telus-agcg/tpm-demeter-terraform-test  main-approval  false       3 days ago
@@ -82,6 +88,16 @@ ID          URL                                                                 
 bsh ❯ gh my deployments -r telus-agcg/retro-cdc
 ID          URL                                                              Branch  When
 5388868900  https://github.com/telus-agcg/retro-cdc/actions/runs/5388868900  main    3 hours ago
+```
+
+### JSON output
+
+The json output is a direct consequence of #46 because we want to oneliner things and using awk may end up being too brittle. The output is a json object per line, so you can use `jq` to filter the output.
+
+```bash
+bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -L 1 gh pr view --comments | grep "Terraform Plan"
+#### Terraform Plan :book: `unchanged`
+bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -I {} bash -c "gh approve {} && gh squash-merge {}"
 ```
 
 ## License

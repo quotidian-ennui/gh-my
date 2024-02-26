@@ -1,58 +1,34 @@
 #!/usr/bin/env bash
 
-function query_reviews() {
-
-  local format=""
-  local as_json='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "url": .url }'
-
-  for arg in "$@"; do
-    shift
-    case "$arg" in
-      --jsonlines|--json) set -- "$@" '-j';;
-      *) set -- "$@" "$arg";;
-    esac
-  done
-
-  while getopts 'j' flag; do
-    case "${flag}" in
-    j) format="json" ;;
-    *) query_help ;;
-    esac
-  done
-
+query_reviews() {
   # shellcheck disable=SC2016
-  local query='query ($endCursor: String){
-          search(query: "is:open is:pr review-requested:@me archived:false", after: $endCursor, type: ISSUE, first: 50) {
-            edges {
-              node {
-                ... on PullRequest {
-                  number
-                  title
-                  author {
-                     login
-                  }
-                  reviewDecision
-                  createdAt
-                  url
-                  repository {
-                    nameWithOwner
-                    name
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
+  local query='
+query ($endCursor: String){
+  search(query: "is:open is:pr review-requested:@me archived:false", after: $endCursor, type: ISSUE, first: 50) {
+    edges {
+      node {
+        ... on PullRequest {
+          number
+          title
+          author {
+             login
           }
-        }'
-  case $format in
-  json)
-    gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --jq "$as_json" | jq -c "."
-    ;;
-  *)
-    gh api graphql --paginate --raw-field query="$(internal::compressQuery "$query")" --template="$TEMPLATE"
-    ;;
-  esac
+          reviewDecision
+          createdAt
+          url
+          repository {
+            nameWithOwner
+            name
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}'
+  helper::std_output_format "$@"
+  helper::std_graphql "$query"
 }
