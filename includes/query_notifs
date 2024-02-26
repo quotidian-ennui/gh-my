@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 query_notifs() {
-  local notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" -}}
+  local notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" "" -}}
 {{ range . -}}
-{{tablerow (.id | autocolor "green") (.reason | autocolor "cyan") (timeago .updated_at) (.repository.full_name) (hyperlink "https://github.com/notifications" (.subject.title | autocolor "yellow")) -}}
+{{tablerow (.id | autocolor "green") (.reason | autocolor "cyan") (timeago .updated_at) (.repository.full_name) (hyperlink "https://github.com/notifications" (.subject.title | autocolor "yellow")) ("\x1b]8;;\x1b\\") -}}
 {{end -}}'
 
   local notif_id=''
