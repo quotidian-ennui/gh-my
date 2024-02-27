@@ -30,7 +30,7 @@ fi
 for arg in "$@"; do
   shift
   case "$arg" in
-  --jsonlines | --json) set -- "$@" '-j' ;;
+  --jsonlines | --jsonl) set -- "$@" '-j' ;;
   *) set -- "$@" "$arg" ;;
   esac
 done
