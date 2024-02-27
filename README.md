@@ -102,6 +102,17 @@ bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -L 1 
 bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -I {} bash -c "gh approve {} && gh squash-merge {}"
 ```
 
+- If you don't like JSON lines output then you can convert it into CSV if that's your bag since the keys are consistent across the output (normally you wouldn't be able to assume this with jsonl).
+
+```bash
+bsh ❯ gh my prs -j | jq --slurp | yq -p j -o csv
+createdAt,login,number,title,url
+2024-02-27T14:33:50Z,quotidian-ennui,52,feat: add json output to report+vulns,https://github.com/quotidian-ennui/gh-my/pull/52
+2024-02-26T03:20:48Z,qe-repo-updater,356,deps(java): bump quarkus to 3.7.4,https://github.com/quotidian-ennui/tesla-powerwall-exporter/pull/356
+2024-02-21T20:36:11Z,quotidian-ennui,72,feat!: switch to go-nv/goenv,https://github.com/quotidian-ennui/ubuntu-dpm/pull/72
+2024-02-19T09:03:13Z,qe-repo-updater,114,chore(deps): Bump gradle version to 8.6,https://github.com/quotidian-ennui/interlok-build-parent/pull/114
+```
+
 ## License
 
 See [LICENSE](./LICENSE)
