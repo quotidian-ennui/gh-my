@@ -51,6 +51,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   -q : omit the table headers
   -a : use 'author' instead of 'involves'
   -v : everything involving your user (e.g. where you're a CODEOWNER)
+  -j : output each row as a JSON object.
 
 'failures' uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
@@ -63,6 +64,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   -o : the owner (e.g. -o my-company | -o my-user)
        default is whatever 'gh config get user -h github.com' returns
        ** Viewing security alerts implies permissions
+  -j : output each row as a JSON object.
 ```
 
 ```bash
