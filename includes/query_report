@@ -1,36 +1,15 @@
 #!/usr/bin/env bash
 
-# Get all the issues & PRs involving by me in the last 14 days.
-query_report() {
-  local report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
-  local report_data='
-{{range(pluck "node" .data.search.edges) -}}
-{{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timefmt "02-Jan" .updatedAt)  -}}
-{{end -}}
-{{tablerender}}
-'
-  # This catches PRs where I have been requested as a reviewer, but I did nothing (CODEOWNER)
-  local user_filter="involves:@me -user-review-requested:@me"
-  local include_headers=true
-  local since='14 days ago'
-  local queryString
-  while getopts 'd:qav' flag; do
-    case "${flag}" in
-    d) since="${OPTARG}" ;;
-    a) user_filter="author:@me" ;;
-    v) user_filter="involves:@me" ;;
-    q) include_headers=false ;;
-    *) query_help ;;
-    esac
-  done
-
-  local report_template="$report_data"
-  if [[ "$include_headers" == "true" ]]; then
-    report_template="$report_header $report_data"
-  fi
-  queryString="$user_filter updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
-  # shellcheck disable=SC2016
-  local query='
+# shellcheck disable=SC2016
+REPORT_JSON_JQ='.data.search.edges[] | .node |
+  {
+    "number":.number,
+    "title": .title, "repository":
+    .repository.nameWithOwner,
+    "url": .url,
+    "updatedAt": .updatedAt
+  }'
+REPORT_GRAPHQL_QUERY='
 query ($queryString: String!, $endCursor: String){
   search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
     edges {
@@ -67,6 +46,55 @@ query ($queryString: String!, $endCursor: String){
       endCursor
     }
   }
-}'
-  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$report_template"
+}
+'
+
+# Get all the issues & PRs involving by me in the last 14 days.
+query_report() {
+
+  # This catches PRs where I have been requested as a reviewer, but I did nothing (CODEOWNER)
+  local user_filter="involves:@me -user-review-requested:@me"
+  local include_headers=true
+  local since='14 days ago'
+  local output_format="table"
+  local queryString
+  local report_template
+
+  while getopts 'd:qavj' flag; do
+    case "${flag}" in
+    d) since="${OPTARG}" ;;
+    j) output_format="json" ;;
+    a) user_filter="author:@me" ;;
+    v) user_filter="involves:@me" ;;
+    q) include_headers=false ;;
+    *) query_help ;;
+    esac
+  done
+
+  report_template="$(private::report_table_template "$include_headers")"
+  queryString="$user_filter updated:>=$(date --date="$since" '+%Y-%m-%d') archived:false sort:updated"
+  case $output_format in
+  json)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$REPORT_GRAPHQL_QUERY")" --jq "$REPORT_JSON_JQ" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$REPORT_GRAPHQL_QUERY")" --template "$report_template"
+    ;;
+  esac
+}
+
+private::report_table_template() {
+  local report_header='{{tablerow "Num" "Title" "Repository" "URL" "Last Activity" -}}'
+  local report_data='
+{{range(pluck "node" .data.search.edges) -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title (.repository.nameWithOwner | autocolor "yellow") (.url | autocolor "cyan") (timefmt "02-Jan" .updatedAt)  -}}
+{{end -}}
+{{tablerender}}
+'
+  local report_template="$report_data"
+  local include_headers="$1"
+  if [[ "$include_headers" == "true" ]]; then
+    report_template="$report_header $report_data"
+  fi
+  echo "$report_template"
 }

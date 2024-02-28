@@ -1,33 +1,32 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-query_vulns() {
+# shellcheck disable=SC2016
+VULNS_JSON_JQ='
+.data.search.edges[] | .node.vulnerabilityAlerts.nodes.[] |
+{
+    "repository": .repository.nameWithOwner,
+    "package": .securityVulnerability.package.name,
+    "url": "http://github.com/\(.repository.nameWithOwner)/security/dependabot/\(.number)",
+    "createdAt": .createdAt
+}
+'
 
-  local whoami
-  whoami=$(gh config get user -h github.com)
-  while getopts 'o:' flag; do
-    case "${flag}" in
-    o) whoami="${OPTARG}" ;;
-    *) query_help ;;
-    esac
-  done
-
-  local queryString="owner:$whoami archived:false"
-  # shellcheck disable=SC2016
-  local template='{{tablerow "Repository" "Package" "URL" "Created" -}}
+# shellcheck disable=SC2016
+VULNS_REPORT_TEMPLATE='
+{{tablerow "Repository" "Package" "URL" "Created" -}}
 {{range(pluck "node" .data.search.edges) -}}
-{{ $repo:=.nameWithOwner -}}
 {{range .vulnerabilityAlerts.nodes -}}
-{{ $url:= printf "https://github.com/%s/security/dependabot/%v" $repo .number -}}
-{{tablerow ($repo | autocolor "green")
+{{ $url:= printf "https://github.com/%s/security/dependabot/%v" .repository.nameWithOwner .number -}}
+{{tablerow (.repository.nameWithOwner | autocolor "green")
           (.securityVulnerability.package.name | autocolor "cyan")
           ($url | autocolor "yellow")
           (timeago .createdAt) -}}
 {{end -}}
 {{end -}}
 '
-  # shellcheck disable=SC2016
-  local query='
+# shellcheck disable=SC2016
+VULNS_GRAPHQL_QUERY='
 query($searchQuery: String!, $endCursor: String) {
   search(query: $searchQuery, type: REPOSITORY, first: 100, after: $endCursor) {
     edges {
@@ -40,6 +39,9 @@ query($searchQuery: String!, $endCursor: String) {
               vulnerableManifestPath
               vulnerableManifestFilename
               number
+              repository {
+                nameWithOwner
+              }
               securityVulnerability {
                 package {
                   name
@@ -55,6 +57,29 @@ query($searchQuery: String!, $endCursor: String) {
       endCursor
     }
   }
-}'
-  gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template="$template"
+}
+'
+
+query_vulns() {
+
+  local whoami
+  local output_format="table"
+  whoami=$(gh config get user -h github.com)
+  while getopts 'o:j' flag; do
+    case "${flag}" in
+    j) output_format="json" ;;
+    o) whoami="${OPTARG}" ;;
+    *) query_help ;;
+    esac
+  done
+
+  local queryString="owner:$whoami archived:false"
+  case $output_format in
+  json)
+    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+    ;;
+  esac
 }

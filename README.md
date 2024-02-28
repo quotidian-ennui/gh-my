@@ -51,6 +51,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   -q : omit the table headers
   -a : use 'author' instead of 'involves'
   -v : everything involving your user (e.g. where you're a CODEOWNER)
+  -j : output each row as a JSON object.
 
 'failures' uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
@@ -63,6 +64,7 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   -o : the owner (e.g. -o my-company | -o my-user)
        default is whatever 'gh config get user -h github.com' returns
        ** Viewing security alerts implies permissions
+  -j : output each row as a JSON object.
 ```
 
 ```bash
@@ -98,6 +100,17 @@ The json output is a direct consequence of #46 because we want to oneliner thing
 bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -L 1 gh pr view --comments | grep "Terraform Plan"
 #### Terraform Plan :book: `unchanged`
 bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -I {} bash -c "gh approve {} && gh squash-merge {}"
+```
+
+- If you don't like JSON lines output then you can convert it into CSV if that's your bag since the keys are consistent across the output (normally you wouldn't be able to assume this with jsonl).
+
+```bash
+bsh ❯ gh my prs -j | jq --slurp | yq -p j -o csv
+createdAt,login,number,title,url
+2024-02-27T14:33:50Z,quotidian-ennui,52,feat: add json output to report+vulns,https://github.com/quotidian-ennui/gh-my/pull/52
+2024-02-26T03:20:48Z,qe-repo-updater,356,deps(java): bump quarkus to 3.7.4,https://github.com/quotidian-ennui/tesla-powerwall-exporter/pull/356
+2024-02-21T20:36:11Z,quotidian-ennui,72,feat!: switch to go-nv/goenv,https://github.com/quotidian-ennui/ubuntu-dpm/pull/72
+2024-02-19T09:03:13Z,qe-repo-updater,114,chore(deps): Bump gradle version to 8.6,https://github.com/quotidian-ennui/interlok-build-parent/pull/114
 ```
 
 ## License
