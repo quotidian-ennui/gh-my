@@ -73,7 +73,7 @@ query_vulns() {
     esac
   done
 
-  local queryString="owner:$whoami archived:false"
+  local queryString="owner:$whoami fork:true archived:false"
   case $output_format in
   json)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
