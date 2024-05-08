@@ -2,6 +2,7 @@
 
 query_prs() {
   #shellcheck disable=SC2034
+  #shellcheck disable=SC2016
   local table_template='{{tablerow "Status" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ if index . "statusCheckRollup" -}}
@@ -15,8 +16,8 @@ query_prs() {
   {{ end -}}
   {{end -}}
   {{tablerender}}'
-  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "url": .url, "createdAt": .createdAt}'
 
+  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "url": .url, "createdAt": .createdAt}'
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String) {
