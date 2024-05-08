@@ -20,7 +20,7 @@ query_prs() {
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String) {
-  search(query: "is:closed is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
+  search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
     edges {
       node {
         ... on PullRequest {
