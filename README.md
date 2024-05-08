@@ -15,13 +15,13 @@ Prerequisites:
 
 To install this extension:
 
-```
+```bash
 gh extension install quotidian-ennui/gh-my
 ```
 
 ## Usage
 
-```shell
+```text
 bsh ❯ gh my
 
 Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
@@ -113,13 +113,14 @@ bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -I {}
 
 - If you don't like JSON lines output then you can convert it into CSV if that's your bag since the keys are consistent across the output (normally you wouldn't be able to assume this with jsonl).
 
-```bash
+```text
 bsh ❯ gh my prs -j -a | jq --slurp | yq -p j -o csv
-createdAt,login,number,statusRollup,title,url
-2024-05-08T12:24:37Z,mcwarman,15,SUCCESS,feat: add checkout command to switch branches,https://github.com/quotidian-ennui/bitbucket-pr/pull/15
-2024-05-08T11:28:20Z,qe-repo-updater,26,SUCCESS,chore(deps): Bump Apache Parquet-MR version to 1.14.0,https://github.com/quotidian-ennui/parquet-cli-wrapper/pull/26
-2024-05-08T10:23:56Z,mcwarman,165,SUCCESS,feat: add jsonschema2pojo,https://github.com/quotidian-ennui/ubuntu-dpm/pull/165
-2024-05-08T07:48:13Z,qe-repo-updater,164,FAILURE,chore(deps): Bump golang version to 1.22.3,https://github.com/quotidian-ennui/ubuntu-dpm/pull/164
+createdAt,login,number,reviewDecision,statusRollup,title,url
+2024-05-08T16:00:37Z,quotidian-ennui,64,null,SUCCESS,feat(prs)!: switch to repo first behaviour for query_prs,https://github.com/quotidian-ennui/gh-my/pull/64
+2024-05-08T12:24:37Z,mcwarman,15,CHANGES_REQUESTED,SUCCESS,feat: add checkout command to switch branches,https://github.com/quotidian-ennui/bitbucket-pr/pull/15
+2024-05-08T11:28:20Z,qe-repo-updater,26,APPROVED,SUCCESS,chore(deps): Bump Apache Parquet-MR version to 1.14.0,https://github.com/quotidian-ennui/parquet-cli-wrapper/pull/26
+2024-05-08T10:23:56Z,mcwarman,165,null,SUCCESS,feat: add jsonschema2pojo,https://github.com/quotidian-ennui/ubuntu-dpm/pull/165
+2024-05-08T07:48:13Z,qe-repo-updater,164,null,FAILURE,chore(deps): Bump golang version to 1.22.3,https://github.com/quotidian-ennui/ubuntu-dpm/pull/164
 ```
 
 ## License
