@@ -4,7 +4,15 @@ query_prs() {
   #shellcheck disable=SC2034
   local table_template='{{tablerow "Status" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
-  {{tablerow .statusCheckRollup.state (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+  {{ if index . "statusCheckRollup" -}}
+    {{ $colour := "green" -}}
+    {{ if ne .statusCheckRollup.state "SUCCESS" -}}
+      {{ $colour = "red" -}}
+    {{ end -}}
+    {{tablerow (.statusCheckRollup.state | autocolor $colour) (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+  {{ else -}}
+    {{tablerow ("UNKNOWN" | autocolor "yellow") (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+  {{ end -}}
   {{end -}}
   {{tablerender}}'
   local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "url": .url, "createdAt": .createdAt}'
@@ -12,7 +20,7 @@ query_prs() {
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String) {
-  search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
+  search(query: "is:closed is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
     edges {
       node {
         ... on PullRequest {
