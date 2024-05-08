@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 
 query_prs() {
+  #shellcheck disable=SC2034
+  local table_template='{{tablerow "Status" "Num" "Title" "Who" "URL" "When" -}}
+  {{range(pluck "node" .data.search.edges) -}}
+  {{tablerow .statusCheckRollup.state (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+  {{end -}}
+  {{tablerender}}'
+  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "url": .url, "createdAt": .createdAt}'
+
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String) {
@@ -19,6 +27,9 @@ query ($endCursor: String) {
             nameWithOwner
             name
           }
+          statusCheckRollup {
+            state
+          }
         }
       }
     }
@@ -28,6 +39,19 @@ query ($endCursor: String) {
     }
   }
 }'
-  helper::std_output_format "$@"
-  helper::std_graphql "$query"
+
+  while getopts 'j' flag; do
+    case "${flag}" in
+    j) output_format="json" ;;
+    *) query_help ;;
+    esac
+  done
+  case $output_format in
+  json)
+    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --jq "$jq_filter" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --template "$table_template"
+    ;;
+  esac
 }
