@@ -7,10 +7,11 @@ This is an extension for [GitHub CLI](https://cli.github.com/) that just lists a
 ## Installation
 
 Prerequisites:
- - [GitHub CLI](https://cli.github.com/) is already installed and authenticated
- - [`jq`](https://stedolan.github.io/jq/) is installed
- - `column` which is a standard linux tool; already present in _git+bash_ on windows; via _util-linux_ on ubuntu.
- - `date` needs to support the `--date "14 days ago"` style option.
+
+- [GitHub CLI](https://cli.github.com/) is already installed and authenticated
+- [`jq`](https://stedolan.github.io/jq/) is installed
+- `column` which is a standard linux tool; already present in _git+bash_ on windows; via _util-linux_ on ubuntu.
+- `date` needs to support the `--date "14 days ago"` style option.
 
 To install this extension:
 
@@ -20,10 +21,12 @@ gh extension install quotidian-ennui/gh-my
 
 ## Usage
 
-```
+```shell
+bsh ❯ gh my
+
 Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
   issues      : list issues in your personal repositories
-  prs         : list PRs in your persional repositories
+  prs         : list PRs in the current repository or all your personal repos
   reviews     : list PRs where you've been asked for a review
   workload    : list PRs and issues where you are the assignee
   deployments : list deployments awaiting action on the default branch
@@ -34,12 +37,18 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   vulns       : show vulnerability alerts from dependabot in your personal repositories
 
 'issues' can have its output in JSON format
-'prs' can have its output in JSON format
 'reviews' can have its output in JSON format
 'workload' can have its output in JSON format
   -j : output each row as a JSON object.
        This is useful if you want to script & pipe the output.
        (--jsonlines is also accepted)
+
+'prs' shows the PRs in the current repo by default.
+  -a : PRs in all your personal repositories
+       This is the default behaviour if your current location
+       is not a github repo and should be explicitly set if
+       it is.
+  -j : output each row as a JSON object.
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
@@ -80,7 +89,7 @@ bsh ❯ gh my issues -j
 
 ### deployments
 
-Because of https://github.com/quotidian-ennui/gh-my/issues/2 you can now list deployments that are waiting for someone to approve them (perhaps you're doing something like this : https://warman.io/blog/2023/03/fixing-automating-terraform-with-github-actions/). The usage model is geared towards you filtering either explicitly by repository (in which case you can probably do `gh run list -R <repo> -s "waiting"` instead, but is present for completeness) or by organisation + topic.
+Because of <https://github.com/quotidian-ennui/gh-my/issues/2> you can now list deployments that are waiting for someone to approve them (perhaps you're doing something like this : <https://warman.io/blog/2023/03/fixing-automating-terraform-with-github-actions/>). The usage model is geared towards you filtering either explicitly by repository (in which case you can probably do `gh run list -R <repo> -s "waiting"` instead, but is present for completeness) or by organisation + topic.
 
 ```bash
 bsh ❯ gh my deployments -o telus-agcg -t tpm-demeter
@@ -105,12 +114,12 @@ bsh ❯ gh my reviews -j | grep "bump hashicorp" | jq -c -r '.url' | xargs -I {}
 - If you don't like JSON lines output then you can convert it into CSV if that's your bag since the keys are consistent across the output (normally you wouldn't be able to assume this with jsonl).
 
 ```bash
-bsh ❯ gh my prs -j | jq --slurp | yq -p j -o csv
-createdAt,login,number,title,url
-2024-02-27T14:33:50Z,quotidian-ennui,52,feat: add json output to report+vulns,https://github.com/quotidian-ennui/gh-my/pull/52
-2024-02-26T03:20:48Z,qe-repo-updater,356,deps(java): bump quarkus to 3.7.4,https://github.com/quotidian-ennui/tesla-powerwall-exporter/pull/356
-2024-02-21T20:36:11Z,quotidian-ennui,72,feat!: switch to go-nv/goenv,https://github.com/quotidian-ennui/ubuntu-dpm/pull/72
-2024-02-19T09:03:13Z,qe-repo-updater,114,chore(deps): Bump gradle version to 8.6,https://github.com/quotidian-ennui/interlok-build-parent/pull/114
+bsh ❯ gh my prs -j -a | jq --slurp | yq -p j -o csv
+createdAt,login,number,statusRollup,title,url
+2024-05-08T12:24:37Z,mcwarman,15,SUCCESS,feat: add checkout command to switch branches,https://github.com/quotidian-ennui/bitbucket-pr/pull/15
+2024-05-08T11:28:20Z,qe-repo-updater,26,SUCCESS,chore(deps): Bump Apache Parquet-MR version to 1.14.0,https://github.com/quotidian-ennui/parquet-cli-wrapper/pull/26
+2024-05-08T10:23:56Z,mcwarman,165,SUCCESS,feat: add jsonschema2pojo,https://github.com/quotidian-ennui/ubuntu-dpm/pull/165
+2024-05-08T07:48:13Z,qe-repo-updater,164,FAILURE,chore(deps): Bump golang version to 1.22.3,https://github.com/quotidian-ennui/ubuntu-dpm/pull/164
 ```
 
 ## License

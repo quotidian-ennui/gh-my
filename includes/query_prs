@@ -1,18 +1,35 @@
 #!/usr/bin/env bash
 
+PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
+
+_prs_repo_query() {
+  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com" | cut -f2 -d':') || true
+  if [[ -n "$gitRemote" ]]; then
+    echo "is:open is:pr repo:$gitRemote archived:false"
+  else
+    echo "$PR_ALL_REPOS_QUERY"
+  fi
+}
+
 query_prs() {
   #shellcheck disable=SC2034
   #shellcheck disable=SC2016
-  local table_template='{{tablerow "Status" "Num" "Title" "Who" "URL" "When" -}}
+  local table_template='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ if index . "statusCheckRollup" -}}
-    {{ $colour := "green" -}}
-    {{ if ne .statusCheckRollup.state "SUCCESS" -}}
-      {{ $colour = "red" -}}
+    {{ $status := "❔" -}}
+    {{ if eq .statusCheckRollup.state "PENDING" -}}
+      {{ $status = "⏱️" -}}
     {{ end -}}
-    {{tablerow (.statusCheckRollup.state | autocolor $colour) (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+    {{ if eq .statusCheckRollup.state "FAILURE" -}}
+      {{ $status = "⛔" -}}
+    {{ end -}}
+    {{ if eq .statusCheckRollup.state "SUCCESS" -}}
+      {{ $status = "✅" -}}
+    {{ end -}}
+    {{tablerow ($status ) (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
   {{ else -}}
-    {{tablerow ("UNKNOWN" | autocolor "yellow") (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+    {{tablerow ("❔") (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
   {{ end -}}
   {{end -}}
   {{tablerender}}'
@@ -20,8 +37,8 @@ query_prs() {
   local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "url": .url, "createdAt": .createdAt}'
   # shellcheck disable=SC2016
   local query='
-query ($endCursor: String) {
-  search(query: "is:open is:pr user:@me archived:false", type: ISSUE, after: $endCursor, first: 50) {
+query ($queryString: String!,$endCursor: String) {
+  search(query: $queryString, type: ISSUE, after: $endCursor, first: 50) {
     edges {
       node {
         ... on PullRequest {
@@ -49,18 +66,21 @@ query ($endCursor: String) {
   }
 }'
 
-  while getopts 'j' flag; do
+  local queryString
+  queryString=$(_prs_repo_query)
+  while getopts 'ja' flag; do
     case "${flag}" in
     j) output_format="json" ;;
+    a) queryString="$PR_ALL_REPOS_QUERY" ;;
     *) query_help ;;
     esac
   done
   case $output_format in
   json)
-    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --jq "$jq_filter" | jq -c "."
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --jq "$jq_filter" | jq -c "."
     ;;
   *)
-    gh api graphql --paginate --raw-field query="$(helper::compressQuery "$query")" --template "$table_template"
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$table_template"
     ;;
   esac
 }
