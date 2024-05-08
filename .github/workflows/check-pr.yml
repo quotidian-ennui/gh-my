@@ -52,7 +52,7 @@ jobs:
       github.event_name == 'pull_request'
     steps:
       - run: |
-          regexp="^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|deps)(\(.+\))?: "
+          regexp="^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|deps)(\(.+\))?(!)?: "
           title="${{ github.event.pull_request.title }}"
           if [[ ! $title =~ $regexp ]]; then
             echo "PR Title is not 'conventional' matching $regexp" >> "$GITHUB_STEP_SUMMARY"
