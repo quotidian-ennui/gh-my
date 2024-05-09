@@ -14,9 +14,9 @@ _prs_repo_query() {
 query_prs() {
   #shellcheck disable=SC2034
   #shellcheck disable=SC2016
-  local table_template='{{tablerow "" "" "Num" "Title" "Who" "URL" "When" -}}
+  local table_template='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
-  {{ $review := "⁉️" -}}
+  {{ $review := "❔" -}}
   {{ $status := "❔" -}}
   {{ if index . "reviewDecision" -}}
     {{ if eq .reviewDecision "CHANGES_REQUESTED" -}}
@@ -40,11 +40,15 @@ query_prs() {
       {{ $status = "✅" -}}
     {{ end -}}
   {{ end -}}
-  {{tablerow $status $review (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
+  {{ $draft := "🛫" -}}
+  {{ if eq .isDraft true -}}
+    {{ $draft = "🔨" -}}
+  {{ end -}}
+  {{tablerow ( printf "%s%s%s" $status $review $draft) (printf "#%v" .number | autocolor "green") .title .author.login (.url | autocolor "cyan") (timeago .createdAt)  -}}
   {{end -}}
   {{tablerender}}'
 
-  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "url": .url, "createdAt": .createdAt}'
+  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
   # shellcheck disable=SC2016
   local query='
 query ($queryString: String!,$endCursor: String) {
@@ -67,6 +71,7 @@ query ($queryString: String!,$endCursor: String) {
             state
           }
           reviewDecision
+          isDraft
         }
       }
     }
