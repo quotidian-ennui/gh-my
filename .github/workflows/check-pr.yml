@@ -13,6 +13,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited'
     steps:
       - name: checkout
         uses: actions/checkout@v4.1.5
@@ -32,7 +35,8 @@ jobs:
       contents: read
       pull-requests: write
     if: |
-      github.event_name == 'pull_request'
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited'
     steps:
       - uses: actions/checkout@v4.1.5
         with:
@@ -49,7 +53,8 @@ jobs:
       contents: read
       pull-requests: read
     if: |
-      github.event_name == 'pull_request'
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'edited' || github.event.action == 'opened')
     steps:
       - run: |
           regexp="^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|deps)(\(.+\))?(!)?: "
@@ -64,6 +69,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited'
     steps:
       - uses: actions/checkout@v4.1.5
       - name: typos
