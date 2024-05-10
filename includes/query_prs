@@ -3,7 +3,7 @@
 PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
 
 _prs_repo_query() {
-  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com" | cut -f2 -d':') || true
+  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com") || true
   gitRemote=$(helper::giturl_to_base "$gitRemote")
   if [[ -n "$gitRemote" ]]; then
     echo "is:open is:pr repo:$gitRemote archived:false"
