@@ -42,3 +42,11 @@ helper::std_graphql() {
     ;;
   esac
 }
+
+helper::giturl_to_base () {
+  local url=$1
+  url=${url%%.git}
+  url=${url#*github.com:}
+  url=${url#*github.com/}
+  echo "$url"
+}

@@ -5,7 +5,7 @@ query_help() {
 
 Usage: gh my [$ACTION_LIST] [options]
   issues      : list issues in your personal repositories
-  prs         : list PRs in your persional repositories
+  prs         : list PRs in the current repository or all your personal repos
   reviews     : list PRs where you've been asked for a review
   workload    : list PRs and issues where you are the assignee
   deployments : list deployments awaiting action on the default branch
@@ -16,12 +16,18 @@ Usage: gh my [$ACTION_LIST] [options]
   vulns       : show vulnerability alerts from dependabot in your personal repositories
 
 'issues' can have its output in JSON format
-'prs' can have its output in JSON format
 'reviews' can have its output in JSON format
 'workload' can have its output in JSON format
   -j : output each row as a JSON object.
        This is useful if you want to script & pipe the output.
        (--jsonlines is also accepted)
+
+'prs' shows the PRs in the current repo by default.
+  -a : PRs in all your personal repositories
+       This is the default behaviour if your current location
+       is not a github repo and should be explicitly set if
+       it is.
+  -j : output each row as a JSON object.
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
