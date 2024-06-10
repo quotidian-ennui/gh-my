@@ -20,7 +20,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4.1.6
       - name: shellcheck
-        uses: reviewdog/action-shellcheck@v1.20.0
+        uses: reviewdog/action-shellcheck@v1.21.0
         with:
           reporter: github-pr-review
           pattern: |
