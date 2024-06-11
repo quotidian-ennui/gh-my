@@ -18,9 +18,9 @@ jobs:
       github.event.action != 'edited'
     steps:
       - name: checkout
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: shellcheck
-        uses: reviewdog/action-shellcheck@v1.21.0
+        uses: reviewdog/action-shellcheck@6e3a862f231c6895fbd335b70adef8f9243d5762 # v1.21.0
         with:
           reporter: github-pr-review
           pattern: |
@@ -38,11 +38,11 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.action != 'edited'
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
       - name: committed
-        uses: crate-ci/committed@v1.0.20
+        uses: crate-ci/committed@e0a4ba358ac0e6292e750f61b74f77a347eb10ad # v1.0.20
         with:
           args: --no-merge-commit
 
@@ -73,11 +73,11 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.action != 'edited'
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: typos
-        uses: crate-ci/typos@v1.22.0
+        uses: crate-ci/typos@8382594ee09667379b652553cf57daebb8176a3f # v1.22.3
 
-  dependabot-merge:
+  dependabot-merge-trigger:
     needs:
       - shellcheck
       - committed
@@ -85,21 +85,14 @@ jobs:
       - pr-title
     permissions:
       contents: write
-      pull-requests: write
+      pull-requests: read
     if: |
-      github.actor == 'dependabot[bot]'
+      github.actor == 'dependabot[bot]' &&
+      github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    name: PR Trigger
     steps:
-      - name: Find associated PR
-        uses: jwalton/gh-find-current-pr@v1.3.3
-        id: findpr
+      - name: dispatch
+        uses: quotidian-ennui/actions-olio/pr-trigger@main
         with:
-          github-token: ${{ github.token }}
-          state: open
-          sha: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.sha }}
-      - name: merge-if-built
-        continue-on-error: true
-        uses: fastify/github-action-merge-dependabot@v3.10.1
-        with:
-          pr-number: ${{ steps.findpr.outputs.pr }}
-          target: minor
+          event_type: "dependabot-merge"
