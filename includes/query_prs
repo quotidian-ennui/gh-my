@@ -23,7 +23,7 @@ query_prs() {
     {{ if eq .reviewDecision "CHANGES_REQUESTED" -}}
       {{ $review = "✒️" -}}
     {{ end -}}
-    {{ if eq .statusCheckRollup.state "REVIEW_REQUIRED" -}}
+    {{ if eq .reviewDecision "REVIEW_REQUIRED" -}}
       {{ $review = "🔎" -}}
     {{ end -}}
     {{ if eq .reviewDecision "APPROVED" -}}
