@@ -12,13 +12,17 @@ _prs_repo_query() {
   fi
 }
 
+# Because of https://github.com/orgs/community/discussions/24375
+# reviewDecision will only be populated IF a review is 'required'
+# otherwise it defaults to null. ? in that context is potentially
+# a distracting emoji.
 query_prs() {
   #shellcheck disable=SC2034
   #shellcheck disable=SC2016
   local table_template='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
-  {{ $review := "❔" -}}
   {{ $status := "❔" -}}
+  {{ $review := "🌤️" -}}
   {{ if index . "reviewDecision" -}}
     {{ if eq .reviewDecision "CHANGES_REQUESTED" -}}
       {{ $review = "✒️" -}}
