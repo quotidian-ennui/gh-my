@@ -34,7 +34,7 @@ internal::repo_deploys() {
   gh run list --repo "$repo" --json "databaseId,url,headBranch,startedAt" --template "$deploy_template" -s "waiting"
 }
 
-# Query the org, (filtering by topic) listing deploymens in a waiting state that on the default branch
+# Query the org, (filtering by topic) listing deployments in a waiting state that on the default branch
 internal::org_deploys() {
   local queryString="$1"
   # shellcheck disable=SC2016
