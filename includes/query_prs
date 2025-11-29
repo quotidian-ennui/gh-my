@@ -1,25 +1,10 @@
 #!/usr/bin/env bash
 
 PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
-
-_prs_repo_query() {
-  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com") || true
-  gitRemote=$(helper::giturl_to_base "$gitRemote")
-  if [[ -n "$gitRemote" ]]; then
-    echo "is:open is:pr repo:$gitRemote archived:false"
-  else
-    echo "$PR_ALL_REPOS_QUERY"
-  fi
-}
-
-# Because of https://github.com/orgs/community/discussions/24375
-# reviewDecision will only be populated IF a review is 'required'
-# otherwise it defaults to null. ? in that context is potentially
-# a distracting emoji.
-query_prs() {
-  #shellcheck disable=SC2034
-  #shellcheck disable=SC2016
-  local table_template='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
+PR_ORG_REPOS_QUERY="is:open is:pr org:{myorg} archived:false"
+#shellcheck disable=SC2034
+#shellcheck disable=SC2016
+PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ $status := "❔" -}}
   {{ $review := "🌤️" -}}
@@ -53,9 +38,8 @@ query_prs() {
   {{end -}}
   {{tablerender}}'
 
-  local jq_filter='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
-  # shellcheck disable=SC2016
-  local query='
+# shellcheck disable=SC2016
+QUERY_PR_GRAPHQL='
 query ($queryString: String!,$endCursor: String) {
   search(query: $queryString, type: ISSUE, after: $endCursor, first: 50) {
     edges {
@@ -86,22 +70,91 @@ query ($queryString: String!,$endCursor: String) {
     }
   }
 }'
+QUERY_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
 
+_prs_repo_query() {
+  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com") || true
+  gitRemote=$(helper::giturl_to_base "$gitRemote")
+  if [[ -n "$gitRemote" ]]; then
+    echo "is:open is:pr repo:$gitRemote archived:false"
+  else
+    echo "$PR_ALL_REPOS_QUERY"
+  fi
+}
+
+_prs_do_query() {
+  local queryString="$1"
+  local output_format="$2"
+    case $output_format in
+    json)
+      gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --jq "$QUERY_JQ_FILTER" | jq -c "."
+      ;;
+    *)
+      gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --template "$PR_QUERY_TABLE_FORMAT"
+      ;;
+    esac  
+}
+
+
+# Because of https://github.com/orgs/community/discussions/24375
+# reviewDecision will only be populated IF a review is 'required'
+# otherwise it defaults to null. ? in that context is potentially
+# a distracting emoji.
+query_prs() {
   local queryString
+  local queryOrg=""
+  local queryAllOrgs="false"
+  local outputFormat="table"
+  local myOrgs=""
+
   queryString=$(_prs_repo_query)
-  while getopts 'ja' flag; do
-    case "${flag}" in
-    j) output_format="json" ;;
-    a) queryString="$PR_ALL_REPOS_QUERY" ;;
-    *) query_help ;;
+  ARGS=$(getopt --options 'o::ja' --longoptions 'org:,all-orgs' -- "${@}")
+  eval "set -- ${ARGS}"
+  while true; do
+    case "${1}" in
+    -a)
+      queryString="$PR_ALL_REPOS_QUERY" 
+      shift
+      ;;
+    -j)
+      outputFormat="json"
+      shift
+      ;;
+    -o | --org)
+      queryOrg="true"
+      queryString="${PR_ORG_REPOS_QUERY//"{myorg}"/"${2}"}"
+      shift 2
+      ;;
+    --all-orgs)
+      queryAllOrgs="true"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      query_help
+      ;;
     esac
   done
-  case $output_format in
-  json)
-    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --jq "$jq_filter" | jq -c "."
-    ;;
-  *)
-    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$table_template"
-    ;;
-  esac
+  local remaining_args=("${1}")  
+  if [[ -n "${queryOrg:-}"  && -z "${remaining_args:-}" ]]; then
+    echo "argument required when using the -o flag"
+    query_help
+  fi
+
+  if [[ "$queryAllOrgs" == "true" ]]; then
+    myOrgs=$(helper::my_github_orgs)
+    while IFS= read -r org; do
+      queryString="${PR_ORG_REPOS_QUERY//"{myorg}"/"${org}"}"
+      if [[ "$outputFormat" != "json" ]]; then
+        echo -e "\n\n🏛️ $org"
+      fi
+      _prs_do_query "$queryString" "$outputFormat"
+    done <<<"$myOrgs"
+    echo ""    
+  else
+    _prs_do_query "$queryString" "$outputFormat"
+  fi
 }
