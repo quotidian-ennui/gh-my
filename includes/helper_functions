@@ -15,33 +15,8 @@ STD_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .titl
 STD_OUTPUT_FORMAT="table"
 
 # shellcheck disable=SC2016
-MY_ORGS_QUERY='
-query ($queryString: String!,$endCursor: String) {
-  search(query: $queryString, type: USER , after: $endCursor, first: 50) {
-    edges {
-      node {
-        ... on User {
-					bio
-					organizations (after: $endCursor, first: 50) {
-						... on OrganizationConnection  {
-							nodes {
-								id
-								name
-								login
-							}
-						}
-					}
-        }
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-'
-MY_ORGS_FLATTEN_JQ='.data.search.edges[].node.organizations.nodes[] | .login'
+MY_ORGS_QUERY='query { viewer { organizations(first: 100) { nodes { login } } } }'
+MY_ORGS_FLATTEN_JQ='.data.viewer.organizations.nodes[] | .login'
 
 helper::gh_api() {
   gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
@@ -82,5 +57,5 @@ helper::giturl_to_base() {
 }
 
 helper::my_github_orgs() {
-  gh api graphql --paginate -F queryString="user:@me" --raw-field query="$(helper::compressQuery "$MY_ORGS_QUERY")" --jq "$MY_ORGS_FLATTEN_JQ"
+  gh api graphql --paginate --raw-field query="$(helper::compressQuery "$MY_ORGS_QUERY")" --jq "$MY_ORGS_FLATTEN_JQ"
 }

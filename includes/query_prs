@@ -139,7 +139,7 @@ query_prs() {
   done
   local remaining_args=("${1}")
   if [[ -n "${queryOrg:-}" && -z "${remaining_args:-}" ]]; then
-    echo "argument required when using the -o flag"
+    echo "organization name required when using the -o flag"
     query_help
   fi
 
@@ -148,7 +148,7 @@ query_prs() {
     while IFS= read -r org; do
       queryString="${PR_ORG_REPOS_QUERY//"{myorg}"/"${org}"}"
       if [[ "$outputFormat" != "json" ]]; then
-        echo -e "\n\n🏛️ $org"
+        echo -e "\n🏛️ $org"
       fi
       _prs_do_query "$queryString" "$outputFormat"
     done <<<"$myOrgs"
