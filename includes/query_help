@@ -33,7 +33,7 @@ Usage: gh my [$ACTION_LIST] [options]
        if used in conjunction with -a then shows PRs belonging to
   --all-orgs: ALL organisations that you belong to. This is potentially a time-consuming
               and foolish move, so you have been warned.
-       
+
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)

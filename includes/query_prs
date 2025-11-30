@@ -85,16 +85,15 @@ _prs_repo_query() {
 _prs_do_query() {
   local queryString="$1"
   local output_format="$2"
-    case $output_format in
-    json)
-      gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --jq "$QUERY_JQ_FILTER" | jq -c "."
-      ;;
-    *)
-      gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --template "$PR_QUERY_TABLE_FORMAT"
-      ;;
-    esac  
+  case $output_format in
+  json)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --jq "$QUERY_JQ_FILTER" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --template "$PR_QUERY_TABLE_FORMAT"
+    ;;
+  esac
 }
-
 
 # Because of https://github.com/orgs/community/discussions/24375
 # reviewDecision will only be populated IF a review is 'required'
@@ -113,7 +112,7 @@ query_prs() {
   while true; do
     case "${1}" in
     -a)
-      queryString="$PR_ALL_REPOS_QUERY" 
+      queryString="$PR_ALL_REPOS_QUERY"
       shift
       ;;
     -j)
@@ -138,8 +137,8 @@ query_prs() {
       ;;
     esac
   done
-  local remaining_args=("${1}")  
-  if [[ -n "${queryOrg:-}"  && -z "${remaining_args:-}" ]]; then
+  local remaining_args=("${1}")
+  if [[ -n "${queryOrg:-}" && -z "${remaining_args:-}" ]]; then
     echo "argument required when using the -o flag"
     query_help
   fi
@@ -153,7 +152,7 @@ query_prs() {
       fi
       _prs_do_query "$queryString" "$outputFormat"
     done <<<"$myOrgs"
-    echo ""    
+    echo ""
   else
     _prs_do_query "$queryString" "$outputFormat"
   fi

@@ -21,13 +21,13 @@ query ($queryString: String!,$endCursor: String) {
     edges {
       node {
         ... on User {
-					bio,
+					bio
 					organizations (after: $endCursor, first: 50) {
 						... on OrganizationConnection  {
 							nodes {
-								id,
-								name,
-								login,
+								id
+								name
+								login
 							}
 						}
 					}
