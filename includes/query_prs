@@ -129,6 +129,10 @@ query_prs() {
       queryString="$PR_ALL_REPOS_QUERY"
       ;;
     o)
+      if [[ -z "${OPTARG}" ]]; then
+        echo "Error: -o requires a non-empty organization name"
+        query_help
+      fi
       queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${OPTARG}"}"
       ;;
     j)
