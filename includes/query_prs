@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
-PR_ORG_REPOS_QUERY="is:open is:pr org:{myorg} archived:false"
+PR_ORG_REPOS_QUERY="is:open is:pr org:__MYORG__ archived:false"
 #shellcheck disable=SC2034
 #shellcheck disable=SC2016
 PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
@@ -101,52 +101,51 @@ _prs_do_query() {
 # a distracting emoji.
 query_prs() {
   local queryString
-  local queryOrg=""
   local queryAllOrgs="false"
   local outputFormat="table"
   local myOrgs=""
 
   queryString=$(_prs_repo_query)
-  ARGS=$(getopt --options 'o::ja' --longoptions 'org:,all-orgs' -- "${@}")
-  eval "set -- ${ARGS}"
-  while true; do
-    case "${1}" in
-    -a)
+  for arg in "$@"; do
+    shift
+    case "$arg" in
+    '--all-orgs' | '--allorgs')
+      set -- "$@" '-g'
+      ;;
+    '--org')
+      set -- "$@" '-o'
+      ;;
+    '--all')
+      set -- "$@" '-a'
+      ;;
+    *)
+      set -- "$@" "$arg"
+      ;;
+    esac
+  done
+
+  while getopts 'o:jag' flag; do
+    case "${flag}" in
+    a)
       queryString="$PR_ALL_REPOS_QUERY"
-      shift
+      output_format="json"
       ;;
-    -j)
-      outputFormat="json"
-      shift
+    o)
+      queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${OPTARG}"}"
       ;;
-    -o | --org)
-      queryOrg="true"
-      queryString="${PR_ORG_REPOS_QUERY//"{myorg}"/"${2}"}"
-      shift 2
-      ;;
-    --all-orgs)
+    g)
       queryAllOrgs="true"
-      shift
-      ;;
-    --)
-      shift
-      break
       ;;
     *)
       query_help
       ;;
     esac
   done
-  local remaining_args=("${1}")
-  if [[ -n "${queryOrg:-}" && -z "${remaining_args:-}" ]]; then
-    echo "organization name required when using the -o flag"
-    query_help
-  fi
 
   if [[ "$queryAllOrgs" == "true" ]]; then
     myOrgs=$(helper::my_github_orgs)
     while IFS= read -r org; do
-      queryString="${PR_ORG_REPOS_QUERY//"{myorg}"/"${org}"}"
+      queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${org}"}"
       if [[ "$outputFormat" != "json" ]]; then
         echo -e "\n🏛️ $org"
       fi
