@@ -103,7 +103,6 @@ query_prs() {
   local queryString
   local queryAllOrgs="false"
   local outputFormat="table"
-  local myOrgs=""
 
   queryString=$(_prs_repo_query)
   for arg in "$@"; do
