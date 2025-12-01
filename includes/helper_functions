@@ -15,8 +15,8 @@ STD_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .titl
 STD_OUTPUT_FORMAT="table"
 
 # shellcheck disable=SC2016
-MY_ORGS_QUERY='query { viewer { organizations(first: 100) { nodes { login } } } }'
-MY_ORGS_FLATTEN_JQ='.data.viewer.organizations.nodes[] | .login'
+MY_ORGS_QUERY='query ($after: String) { viewer { organizations(first: 100, after: $after) { edges { cursor node { login } } pageInfo { hasNextPage endCursor } } } }'
+MY_ORGS_FLATTEN_JQ='.data.viewer.organizations.edges[] | .node.login'
 
 helper::gh_api() {
   gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
