@@ -84,8 +84,8 @@ _prs_repo_query() {
 
 _prs_do_query() {
   local queryString="$1"
-  local output_format="$2"
-  case $output_format in
+  local outputFormat="$2"
+  case $outputFormat in
   json)
     gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --jq "$QUERY_JQ_FILTER" | jq -c "."
     ;;
@@ -127,10 +127,12 @@ query_prs() {
     case "${flag}" in
     a)
       queryString="$PR_ALL_REPOS_QUERY"
-      output_format="json"
       ;;
     o)
       queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${OPTARG}"}"
+      ;;
+    j)
+      outputFormat="json"
       ;;
     g)
       queryAllOrgs="true"
