@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+export GH_PAGER="cat"
 GH_REST_API_VERSION="X-GitHub-Api-Version: 2022-11-28"
 GH_ACCEPT="Accept: application/vnd.github+json"
 
@@ -12,6 +13,10 @@ STD_TABLE_TEMPLATE='{{tablerow "Num" "Title" "Who" "URL" "When" -}}
 
 STD_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "url": .url, "createdAt": .createdAt}'
 STD_OUTPUT_FORMAT="table"
+
+# shellcheck disable=SC2016
+MY_ORGS_QUERY='query ($after: String) { viewer { organizations(first: 100, after: $after) { edges { cursor node { login } } pageInfo { hasNextPage endCursor } } } }'
+MY_ORGS_FLATTEN_JQ='.data.viewer.organizations.edges[] | .node.login'
 
 helper::gh_api() {
   gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
@@ -43,10 +48,14 @@ helper::std_graphql() {
   esac
 }
 
-helper::giturl_to_base () {
+helper::giturl_to_base() {
   local url=$1
   url=${url%%.git}
   url=${url#*github.com:}
   url=${url#*github.com/}
   echo "$url"
+}
+
+helper::my_github_orgs() {
+  gh api graphql --paginate --raw-field query="$(helper::compressQuery "$MY_ORGS_QUERY")" --jq "$MY_ORGS_FLATTEN_JQ"
 }
