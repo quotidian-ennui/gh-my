@@ -67,7 +67,6 @@ jobs:
   dependabot-merge-trigger:
     needs:
       - shellcheck
-      - committed
       - typos
       - pr-title
     permissions:
