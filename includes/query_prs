@@ -13,7 +13,7 @@ PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
       {{ $review = "✒️" -}}
     {{ end -}}
     {{ if eq .reviewDecision "REVIEW_REQUIRED" -}}
-      {{ $review = "🔎" -}}
+      {{ $review = "👀" -}}
     {{ end -}}
     {{ if eq .reviewDecision "APPROVED" -}}
       {{ $review = "👍" -}}
