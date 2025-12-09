@@ -44,11 +44,16 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
        (--jsonlines is also accepted)
 
 'prs' shows the PRs in the current repo by default.
-  -a : PRs in all your personal repositories
-       This is the default behaviour if your current location
-       is not a github repo and should be explicitly set if
-       it is.
-  -j : output each row as a JSON object.
+  -a            : PRs in all your personal repositories
+                  This is the default behaviour if your current location
+                  is not a github repo and should be explicitly set if
+                  it is.
+  -j            : output each row as a JSON object.
+  -o --org      : the PRs belonging to the associated organisation
+                  e.g. gh my prs -o my-company
+  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
+                  and foolish move, so you have been warned.
+
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
