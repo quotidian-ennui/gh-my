@@ -53,7 +53,8 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
                   e.g. gh my prs -o my-company
   -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
                   and foolish move, so you have been warned.
-
+  -u            : reduce the output so that the URL is primary
+                  maybe you dislike 'gh my prs -j | jq -r '.url' | xargs -r L1 gh pr view -w'
 
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
