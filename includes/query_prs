@@ -38,6 +38,42 @@ PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{end -}}
   {{tablerender}}'
 
+# Where the URL is more important.
+#shellcheck disable=SC2016
+PR_QUERY_URL_FORMAT='{{tablerow "" "URL" "Title" "Who" -}}
+  {{range(pluck "node" .data.search.edges) -}}
+  {{ $status := "❔" -}}
+  {{ $review := "🌤️" -}}
+  {{ if index . "reviewDecision" -}}
+    {{ if eq .reviewDecision "CHANGES_REQUESTED" -}}
+      {{ $review = "✒️" -}}
+    {{ end -}}
+    {{ if eq .reviewDecision "REVIEW_REQUIRED" -}}
+      {{ $review = "👀" -}}
+    {{ end -}}
+    {{ if eq .reviewDecision "APPROVED" -}}
+      {{ $review = "👍" -}}
+    {{ end -}}
+  {{ end -}}
+  {{ if index . "statusCheckRollup" -}}
+    {{ if eq .statusCheckRollup.state "PENDING" -}}
+      {{ $status = "⏱️" -}}
+    {{ end -}}
+    {{ if eq .statusCheckRollup.state "FAILURE" -}}
+      {{ $status = "⛔" -}}
+    {{ end -}}
+    {{ if eq .statusCheckRollup.state "SUCCESS" -}}
+      {{ $status = "✅" -}}
+    {{ end -}}
+  {{ end -}}
+  {{ $draft := "🛫" -}}
+  {{ if eq .isDraft true -}}
+    {{ $draft = "🔨" -}}
+  {{ end -}}
+  {{tablerow ( printf "%s%s%s" $status $review $draft) (.url | autocolor "cyan") (.title | truncate 30) (.author.login | truncate 20) -}}
+  {{end -}}
+  {{tablerender}}'
+
 # shellcheck disable=SC2016
 QUERY_PR_GRAPHQL='
 query ($queryString: String!,$endCursor: String) {
@@ -85,12 +121,18 @@ _prs_repo_query() {
 _prs_do_query() {
   local queryString="$1"
   local outputFormat="$2"
+  local urlFirst="$3"
+  local template="$PR_QUERY_TABLE_FORMAT"
+
+  if [[ "$urlFirst" == "true" ]]; then
+    template="$PR_QUERY_URL_FORMAT"
+  fi
   case $outputFormat in
   json)
     gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --jq "$QUERY_JQ_FILTER" | jq -c "."
     ;;
   *)
-    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --template "$PR_QUERY_TABLE_FORMAT"
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$QUERY_PR_GRAPHQL")" --template "$template"
     ;;
   esac
 }
@@ -103,6 +145,7 @@ query_prs() {
   local queryString
   local queryAllOrgs="false"
   local outputFormat="table"
+  local urlFirst="false"
 
   queryString=$(_prs_repo_query)
   for arg in "$@"; do
@@ -123,7 +166,7 @@ query_prs() {
     esac
   done
 
-  while getopts 'o:jag' flag; do
+  while getopts 'o:jagu' flag; do
     case "${flag}" in
     a)
       queryString="$PR_ALL_REPOS_QUERY"
@@ -141,6 +184,9 @@ query_prs() {
     g)
       queryAllOrgs="true"
       ;;
+    u)
+      urlFirst="true"
+      ;;
     *)
       query_help
       ;;
@@ -154,10 +200,10 @@ query_prs() {
       if [[ "$outputFormat" != "json" ]]; then
         echo -e "\n🏛️ $org"
       fi
-      _prs_do_query "$queryString" "$outputFormat"
+      _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
     done <<<"$myOrgs"
     echo ""
   else
-    _prs_do_query "$queryString" "$outputFormat"
+    _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
   fi
 }
