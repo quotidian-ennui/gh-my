@@ -39,6 +39,7 @@ PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{tablerender}}'
 
 # Where the URL is more important.
+#shellcheck disable=SC2016
 PR_QUERY_URL_FORMAT='{{tablerow "" "URL" "Title" "Who" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ $status := "❔" -}}
