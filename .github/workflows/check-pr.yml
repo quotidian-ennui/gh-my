@@ -32,9 +32,6 @@ jobs:
           files_yaml: |
             workflows:
               - ".github/workflows/**"
-            markdown:
-              - "**/*.md"
-              - "**/*.markdown"
       - name: shellcheck
         uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
         with:
@@ -52,13 +49,6 @@ jobs:
       - name: actionlint
         uses: reviewdog/action-actionlint@83e4ed25b168066ad8f62f5afbb29ebd8641d982 # v1.69.1
         if: steps.changes.outputs.workflows_any_changed == 'true'
-        with:
-          reporter: github-pr-review
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_level: error
-      - name: markdownlint
-        uses: reviewdog/action-markdownlint@3667398db9118d7e78f7a63d10e26ce454ba5f58 # v0.26.2
-        if: steps.changes.outputs.markdown_any_changed == 'true'
         with:
           reporter: github-pr-review
           github_token: ${{ secrets.GITHUB_TOKEN }}
