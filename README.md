@@ -1,3 +1,10 @@
+<!-- markdownlint-configure-file
+{
+  "MD007": { "indent": 4 },
+  "MD013": false,
+  "MD033": false,
+  "MD024": { "siblings_only": true}
+} -->
 # gh-my
 
 I was messing around with the graph api, and this was the result because who wants to navigate a web UI when you have a terminal. If like me, you don't pay much attention to issues raised on your public repos, then this is marginally useful

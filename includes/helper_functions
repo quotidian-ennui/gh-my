@@ -17,6 +17,7 @@ STD_OUTPUT_FORMAT="table"
 # shellcheck disable=SC2016
 MY_ORGS_QUERY='query ($after: String) { viewer { organizations(first: 100, after: $after) { edges { cursor node { login } } pageInfo { hasNextPage endCursor } } } }'
 MY_ORGS_FLATTEN_JQ='.data.viewer.organizations.edges[] | .node.login'
+MY_ORGS_EXCLUDE="${GH_MY_IGNORE_ORGS:-}"
 
 helper::gh_api() {
   gh api -H "$GH_REST_API_VERSION" -H "$GH_ACCEPT" "$@"
@@ -57,5 +58,20 @@ helper::giturl_to_base() {
 }
 
 helper::my_github_orgs() {
-  gh api graphql --paginate --raw-field query="$(helper::compressQuery "$MY_ORGS_QUERY")" --jq "$MY_ORGS_FLATTEN_JQ"
+  local myorgs=""
+  local filtered_orgs=()
+  myorgs=$(gh api graphql --paginate --raw-field query="$(helper::compressQuery "$MY_ORGS_QUERY")" --jq "$MY_ORGS_FLATTEN_JQ")
+  for org in $myorgs; do
+    skip_org=false
+    for exclude_org in $MY_ORGS_EXCLUDE; do
+      if [[ "$org" == "$exclude_org" ]]; then
+        skip_org=true
+        break
+      fi
+    done
+    if [[ "$skip_org" != "true" ]]; then
+      filtered_orgs+=("$org")
+    fi
+  done
+  echo "${filtered_orgs[@]}"
 }

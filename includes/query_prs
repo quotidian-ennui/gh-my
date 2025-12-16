@@ -195,7 +195,7 @@ query_prs() {
 
   if [[ "$queryAllOrgs" == "true" ]]; then
     myOrgs=$(helper::my_github_orgs)
-    while IFS= read -r org; do
+    for org in $myOrgs; do
       queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${org}"}"
       if [[ "$outputFormat" != "json" ]]; then
         echo -e "\n🏛️ $org"

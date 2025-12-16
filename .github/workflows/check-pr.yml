@@ -5,10 +5,14 @@ on:
       - main
     types: [opened, synchronize, reopened, edited]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:
-  shellcheck:
+  reviewdog:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,7 +22,16 @@ jobs:
       - name: checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - name: Changed Files
+        # Attempt to figure out what files have changed
+        id: changes
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # v47.0.1
+        with:
+          files_yaml: |
+            workflows:
+              - ".github/workflows/**"
       - name: shellcheck
         uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
         with:
@@ -26,6 +39,20 @@ jobs:
           fail_level: error
           check_all_files_with_shebangs: "true"
           github_token: ${{ secrets.github_token }}
+      - name: shfmt
+        uses: reviewdog/action-shfmt@d8f080930b9be5847b4f97e9f4122b81a82aaeac # v1.0.4
+        with:
+          reporter: github-pr-review
+          fail_on_error: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          shfmt_flags: -i 2
+      - name: actionlint
+        uses: reviewdog/action-actionlint@83e4ed25b168066ad8f62f5afbb29ebd8641d982 # v1.69.1
+        if: steps.changes.outputs.workflows_any_changed == 'true'
+        with:
+          reporter: github-pr-review
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_level: error
 
   # Check the PR title conforms to 'conventional'
   pr-title:
@@ -45,7 +72,7 @@ jobs:
 
   dependabot-merge-trigger:
     needs:
-      - shellcheck
+      - reviewdog
       - pr-title
     permissions:
       contents: write
