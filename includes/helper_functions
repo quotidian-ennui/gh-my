@@ -75,3 +75,12 @@ helper::my_github_orgs() {
   done
   echo "${filtered_orgs[@]}"
 }
+
+helper::gh_whoami() {
+  local me=""
+  me=$(gh config get user -h github.com 2>/dev/null || true)
+  if [[ -z "$me" ]]; then
+    me=$(gh auth status -h github.com | grep "Logged in" | sed -e "s/^[[:blank:]]*//" -e "s/[[:blank:]]*$//" | cut -f7 -d ' ')
+  fi
+  echo "$me"
+}

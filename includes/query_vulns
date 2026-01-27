@@ -64,7 +64,7 @@ query_vulns() {
 
   local whoami
   local output_format="table"
-  whoami=$(gh config get user -h github.com)
+  whoami=$(helper::gh_whoami)
   while getopts 'o:j' flag; do
     case "${flag}" in
     j) output_format="json" ;;
