@@ -41,7 +41,8 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
                 (because you have to tell people what you've done)
   notifs      : list unread notifications
   failures    : show workflow failures in your personal repositories in the last 14 days
-  vulns       : show vulnerability alerts from dependabot in your personal repositories
+  vulns       : show vulnerability alerts from dependabot in the current repository
+                or your personal repositories
 
 'issues' can have its output in JSON format
 'reviews' can have its output in JSON format
@@ -60,6 +61,8 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
                   e.g. gh my prs -o my-company
   -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
                   and foolish move, so you have been warned.
+                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
+                  (space separated), but the filter isn't that sophisticated.
   -u            : reduce the output so that the URL is primary
                   maybe you dislike 'gh my prs -j | jq -r '.url' | xargs -r L1 gh pr view -w'
 
@@ -82,7 +85,11 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
   -n : the ID to mark as read (-n 7235590448)
   -a : Mark all notifications as read
 
-'vulns' can have more filters
+'vulns' shows vulnerabilties in your current repo by default
+  -a : vulnerabilities in all your personal repositories
+       This is the default behaviour if your current location
+       is not a github repo and should be explicitly set if
+       it is.
   -o : the owner (e.g. -o my-company | -o my-user)
        default is whatever 'gh config get user -h github.com' returns
        ** Viewing security alerts implies permissions
