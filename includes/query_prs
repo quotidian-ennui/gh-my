@@ -109,8 +109,10 @@ query ($queryString: String!,$endCursor: String) {
 QUERY_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
 
 _prs_repo_query() {
-  gitRemote=$(git remote get-url origin 2>/dev/null | grep "github.com") || true
-  gitRemote=$(helper::giturl_to_base "$gitRemote")
+  local gitRemote=""
+  if helper::is_repo; then
+    gitRemote=$(helper::repo_info)
+  fi
   if [[ -n "$gitRemote" ]]; then
     echo "is:open is:pr repo:$gitRemote archived:false"
   else
