@@ -7,6 +7,8 @@ VULNS_JSON_JQ='
 {
     "repository": .repository.nameWithOwner,
     "package": .securityVulnerability.package.name,
+		"severity": .securityVulnerability.severity,
+		"CVE": .securityAdvisory.identifiers[] | select(.type == "CVE") | .value,
     "url": "http://github.com/\(.repository.nameWithOwner)/security/dependabot/\(.number)",
     "createdAt": .createdAt
 }
@@ -14,12 +16,20 @@ VULNS_JSON_JQ='
 
 # shellcheck disable=SC2016
 VULNS_REPORT_TEMPLATE='
-{{tablerow "Repository" "Package" "URL" "Created" -}}
+{{tablerow "Repository" "Package" "CVE" "Severity" "URL" "Created" -}}
 {{range(pluck "node" .data.search.edges) -}}
 {{range .vulnerabilityAlerts.nodes -}}
 {{ $url:= printf "https://github.com/%s/security/dependabot/%v" .repository.nameWithOwner .number -}}
+{{ $cve:= "❓❓" -}}
+{{range .securityAdvisory.identifiers -}}
+  {{ if eq .type "CVE" -}}
+    {{ $cve = .value -}}
+  {{ end -}}
+{{ end -}}
 {{tablerow (.repository.nameWithOwner | autocolor "green")
           (.securityVulnerability.package.name | autocolor "cyan")
+					($cve | autocolor "yellow")
+					(.securityVulnerability.severity)
           ($url | autocolor "yellow")
           (timeago .createdAt) -}}
 {{end -}}
@@ -46,7 +56,15 @@ query($searchQuery: String!, $endCursor: String) {
                 package {
                   name
                 }
+								severity
               }
+							securityAdvisory {
+								ghsaId
+							  identifiers {
+									type
+									value
+								}
+							}
             }
           }
         }
@@ -62,24 +80,36 @@ query($searchQuery: String!, $endCursor: String) {
 
 query_vulns() {
 
-  local whoami
+  local owner""
+  local repo=""
   local output_format="table"
-  whoami=$(helper::gh_whoami)
-  while getopts 'o:j' flag; do
+  owner=$(helper::gh_whoami)
+  if helper::is_repo; then
+    repo=$(helper::repo_info)
+  fi
+  while getopts 'o:ja' flag; do
     case "${flag}" in
     j) output_format="json" ;;
-    o) whoami="${OPTARG}" ;;
+    o) owner="${OPTARG}" ;;
+    a) repo="" ;;
     *) query_help ;;
     esac
   done
 
-  local queryString="owner:$whoami fork:true archived:false"
+  local queryString=""
+
+  if [[ -n "$repo" ]]; then
+    queryString="repo:$repo"
+  else
+    queryString="owner:$owner fork:true archived:false"
+  fi
   case $output_format in
   json)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
     ;;
   *)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+    # gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")"
     ;;
   esac
 }

@@ -49,12 +49,15 @@ helper::std_graphql() {
   esac
 }
 
-helper::giturl_to_base() {
-  local url=$1
-  url=${url%%.git}
-  url=${url#*github.com:}
-  url=${url#*github.com/}
-  echo "$url"
+helper::is_repo() {
+  if ! gh repo view --json "name" >/dev/null 2>&1; then
+    return 1
+  fi
+  return 0
+}
+
+helper::repo_info() {
+  gh repo view --json "name,owner" | jq -r '"\(.owner.login)/\(.name)"'
 }
 
 helper::my_github_orgs() {
