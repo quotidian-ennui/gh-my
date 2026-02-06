@@ -7,9 +7,9 @@ VULNS_JSON_JQ='
 {
     "repository": .repository.nameWithOwner,
     "package": .securityVulnerability.package.name,
-		"severity": .securityVulnerability.severity,
-		"CVE": .securityAdvisory.identifiers[] | select(.type == "CVE") | .value,
-    "url": "http://github.com/\(.repository.nameWithOwner)/security/dependabot/\(.number)",
+    "severity": .securityVulnerability.severity,
+    "CVE": (.securityAdvisory.identifiers // [] | map(select(.type == "CVE")) | .[0].value) // null,
+    "url": "https://github.com/\(.repository.nameWithOwner)/security/dependabot/\(.number)",
     "createdAt": .createdAt
 }
 '
@@ -28,8 +28,8 @@ VULNS_REPORT_TEMPLATE='
 {{ end -}}
 {{tablerow (.repository.nameWithOwner | autocolor "green")
           (.securityVulnerability.package.name | autocolor "cyan")
-					($cve | autocolor "yellow")
-					(.securityVulnerability.severity)
+          ($cve | autocolor "yellow")
+          (.securityVulnerability.severity)
           ($url | autocolor "yellow")
           (timeago .createdAt) -}}
 {{end -}}
@@ -56,15 +56,15 @@ query($searchQuery: String!, $endCursor: String) {
                 package {
                   name
                 }
-								severity
+                severity
               }
-							securityAdvisory {
-								ghsaId
-							  identifiers {
-									type
-									value
-								}
-							}
+              securityAdvisory {
+                ghsaId
+                identifiers {
+                  type
+                  value
+                }
+              }
             }
           }
         }
@@ -80,7 +80,7 @@ query($searchQuery: String!, $endCursor: String) {
 
 query_vulns() {
 
-  local owner""
+  local owner=""
   local repo=""
   local output_format="table"
   owner=$(helper::gh_whoami)
@@ -113,7 +113,6 @@ query_vulns() {
     ;;
   *)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
-    # gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")"
     ;;
   esac
 }
