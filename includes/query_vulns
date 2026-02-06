@@ -90,7 +90,11 @@ query_vulns() {
   while getopts 'o:ja' flag; do
     case "${flag}" in
     j) output_format="json" ;;
-    o) owner="${OPTARG}" ;;
+    o)
+      # Explicit owner then you know what you're doing?
+      owner="${OPTARG}"
+      repo=""
+      ;;
     a) repo="" ;;
     *) query_help ;;
     esac
