@@ -9,6 +9,7 @@ VULNS_JSON_JQ='
     "package": .securityVulnerability.package.name,
     "severity": .securityVulnerability.severity,
     "CVE": (.securityAdvisory.identifiers // [] | map(select(.type == "CVE")) | .[0].value) // null,
+    "GHSA": .securityAdvisory.ghsaId,
     "url": "https://github.com/\(.repository.nameWithOwner)/security/dependabot/\(.number)",
     "createdAt": .createdAt
 }
@@ -16,11 +17,11 @@ VULNS_JSON_JQ='
 
 # shellcheck disable=SC2016
 VULNS_REPORT_TEMPLATE='
-{{tablerow "Repository" "Package" "CVE" "Severity" "URL" "Created" -}}
+{{tablerow "Repository" "Package" "CVE" "GHSA" "Severity" "URL" "Created" -}}
 {{range(pluck "node" .data.search.edges) -}}
 {{range .vulnerabilityAlerts.nodes -}}
 {{ $url:= printf "https://github.com/%s/security/dependabot/%v" .repository.nameWithOwner .number -}}
-{{ $cve:= "❓❓" -}}
+{{ $cve:= "n/a" -}}
 {{range .securityAdvisory.identifiers -}}
   {{ if eq .type "CVE" -}}
     {{ $cve = .value -}}
@@ -29,8 +30,9 @@ VULNS_REPORT_TEMPLATE='
 {{tablerow (.repository.nameWithOwner | autocolor "green")
           (.securityVulnerability.package.name | autocolor "cyan")
           ($cve | autocolor "yellow")
+          (.securityAdvisory.ghsaId | autocolor "yellow")
           (.securityVulnerability.severity)
-          ($url | autocolor "yellow")
+          ($url | autocolor "blue")
           (timeago .createdAt) -}}
 {{end -}}
 {{end -}}
