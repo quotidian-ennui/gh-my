@@ -5,85 +5,13 @@ on:
       - main
     types: [opened, synchronize, reopened, edited]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions: {}
 
 jobs:
-  reviewdog:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      checks: write
-    steps:
-      - name: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Changed Files
-        # Attempt to figure out what files have changed
-        id: changes
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
-        with:
-          files_yaml: |
-            workflows:
-              - ".github/workflows/**"
-      - name: shellcheck
-        uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
-        with:
-          reporter: github-pr-review
-          fail_level: error
-          check_all_files_with_shebangs: "true"
-          github_token: ${{ secrets.github_token }}
-      - name: shfmt
-        uses: reviewdog/action-shfmt@d8f080930b9be5847b4f97e9f4122b81a82aaeac # v1.0.4
-        with:
-          reporter: github-pr-review
-          fail_on_error: true
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          shfmt_flags: -i 2
-      - name: actionlint
-        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
-        if: steps.changes.outputs.workflows_any_changed == 'true'
-        with:
-          reporter: github-pr-review
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_level: error
-
-  # Check the PR title conforms to 'conventional'
-  pr-title:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          regexp="^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|deps)(\(.+\))?(!)?: "
-          if [[ ! $PR_TITLE =~ $regexp ]]; then
-            echo "PR Title is not 'conventional' matching $regexp" >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-
-  dependabot-merge-trigger:
-    needs:
-      - reviewdog
-      - pr-title
+  check-pr:
+    uses: quotidian-ennui/workflows-olio/.github/workflows/check-pr-with-trigger.yml@main
+    secrets: inherit
     permissions:
       contents: write
-      pull-requests: read
-    if: |
-      github.actor == 'dependabot[bot]' &&
-      github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    name: PR Trigger
-    steps:
-      - name: dispatch
-        uses: quotidian-ennui/actions-olio/pr-trigger@main
-        with:
-          event_type: "dependabot-merge"
+      pull-requests: write
+      checks: write
