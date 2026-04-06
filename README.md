@@ -80,6 +80,10 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
 
 'failures' uses 'date' so any gnu date string is valid
   -d : the date string (default is "14 days ago")
+  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
+                  and foolish move, so you have been warned.
+                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
+                  (space separated), but the filter isn't that sophisticated.
 
 'notifs' can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
