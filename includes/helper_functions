@@ -24,7 +24,7 @@ helper::gh_api() {
 }
 
 helper::compressQuery() {
-  echo "$1" | tr -s ' ' | tr -d '\n'
+  echo "$1" | tr -d '\n'
 }
 
 helper::std_output_format() {
