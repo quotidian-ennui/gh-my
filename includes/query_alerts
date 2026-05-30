@@ -3,9 +3,7 @@ set -eo pipefail
 
 #shellcheck disable=SC2016
 ALERTS_JSON_REST_JQ='
-  (["ID", "STATE", "SEVERITY", "PACKAGE", "CVE", "GHSA", "URL"]),
-  (
-    .[] | select(.state == "open") |
+  .[] | select(.state == "open") |
     [
       (.number | tostring),
       (.state // ""),
@@ -15,8 +13,7 @@ ALERTS_JSON_REST_JQ='
       (.security_advisory.ghsa_id // ""),
       "https://github.com/\($repo_info)/security/dependabot/\(.number)"
     ]
-  ) |
-  @tsv
+  | @tsv
 '
 
 query_alerts() {
@@ -29,5 +26,7 @@ query_alerts() {
 
   repo_info=$(helper::repo_info)
 
-  helper::gh_api "repos/:owner/:repo/dependabot/alerts" | jq -r --arg repo_info "$repo_info" "$ALERTS_JSON_REST_JQ" | column -t -s $'\t'
+  helper::gh_api "repos/:owner/:repo/dependabot/alerts" \
+    | jq -r --arg repo_info "$repo_info" "$ALERTS_JSON_REST_JQ" \
+    | column -t -s $'\t' -N  "ID,STATE,SEVERITY,PACKAGE,CVE,GHSA,URL" --table-truncate URL
 }
