@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+ALERTS_JSON_REST_JQ='
+  (["ID", "STATE", "SEVERITY", "PACKAGE", "CVE", "GHSA", "URL"]),
+  (
+    .[] | select(.state == "open") |
+    [
+      (.number | tostring),
+      (.state // ""),
+      (.security_advisory.severity // ""),
+      (.dependency.package.name // ""),
+      (.security_advisory.cve_id // ""),
+      (.security_advisory.ghsa_id // ""),
+      "https://github.com/\($repo_info)/security/dependabot/\(.number)"
+    ]
+  ) |
+  @tsv
+'
+
+query_alerts() {
+  local repo_info=""
+
+  if ! helper::is_repo; then
+    echo "alerts requires the current directory to be a github repo"
+    exit 1
+  fi
+
+  repo_info=$(helper::repo_info)
+
+  helper::gh_api "repos/:owner/:repo/dependabot/alerts" | jq -r --arg repo_info "$repo_info" "$ALERTS_JSON_REST_JQ" | column -t -s $'\t'
+}
