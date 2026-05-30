@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+#shellcheck disable=SC2016
 ALERTS_JSON_REST_JQ='
   (["ID", "STATE", "SEVERITY", "PACKAGE", "CVE", "GHSA", "URL"]),
   (
