@@ -31,7 +31,8 @@ gh extension install quotidian-ennui/gh-my
 ```text
 bsh ❯ gh my
 
-Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
+Usage: gh my [alerts|deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
+  alerts      : show open dependabot alerts in the current repository
   issues      : list issues in your personal repositories
   prs         : list PRs in the current repository or all your personal repos
   reviews     : list PRs where you've been asked for a review
@@ -88,6 +89,9 @@ Usage: gh my [deployments|failures|help|issues|notifs|prs|report|reviews|vulns|w
 'notifs' can also mark them as read
   -n : the ID to mark as read (-n 7235590448)
   -a : Mark all notifications as read
+
+'alerts' shows open dependabot alerts in the current repo
+       This sub-command requires repository context.
 
 'vulns' shows vulnerabilties in your current repo by default
   -a : vulnerabilities in all your personal repositories
