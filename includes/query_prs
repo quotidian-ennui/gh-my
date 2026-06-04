@@ -185,7 +185,7 @@ query_prs() {
         echo "Error: -o requires a non-empty organization name"
         query_help
       fi
-      queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${OPTARG}"}"
+      queryString=$(_prs_org_query "${OPTARG}")
       ;;
     j)
       outputFormat="json"
