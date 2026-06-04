@@ -110,14 +110,21 @@ QUERY_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .ti
 
 _prs_repo_query() {
   local gitRemote=""
+  local queryExtras="${GH_MY_PRS_QUERY_EXTRAS:-}"
   if helper::is_repo; then
     gitRemote=$(helper::repo_info)
   fi
   if [[ -n "$gitRemote" ]]; then
-    echo "is:open is:pr repo:$gitRemote archived:false"
+    echo "is:open is:pr repo:$gitRemote archived:false $queryExtras"
   else
-    echo "$PR_ALL_REPOS_QUERY"
+    echo "$PR_ALL_REPOS_QUERY $queryExtras"
   fi
+}
+
+_prs_org_query() {
+  local org="$1"
+  local queryExtras="${GH_MY_PRS_QUERY_EXTRAS:-}"
+  echo "${PR_ORG_REPOS_QUERY//"__MYORG__"/"${org}"} $queryExtras"
 }
 
 _prs_do_query() {
@@ -198,7 +205,7 @@ query_prs() {
   if [[ "$queryAllOrgs" == "true" ]]; then
     myOrgs=$(helper::my_github_orgs)
     for org in $myOrgs; do
-      queryString="${PR_ORG_REPOS_QUERY//"__MYORG__"/"${org}"}"
+      queryString="$(_prs_org_query "$org")"
       if [[ "$outputFormat" != "json" ]]; then
         echo -e "\n🏛️ $org"
       fi

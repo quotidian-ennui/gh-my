@@ -67,6 +67,10 @@ Usage: gh my [alerts|deployments|failures|help|issues|notifs|prs|report|reviews|
   -u            : reduce the output so that the URL is primary
                   maybe you dislike 'gh my prs -j | jq -r '.url' | xargs -r L1 gh pr view -w'
 
+Environment for 'prs':
+  'GH_MY_PRS_QUERY_EXTRAS' - this environment variable is appended to the prs query so you
+                             can do something like "-label:backlog" to filter the query.
+
 'deployments' needs more filters
   -o : the organisation (e.g. -o my-company)
   -t : the topic  (e.g. -t my-terraform-repos)
