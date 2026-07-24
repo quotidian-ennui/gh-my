@@ -83,32 +83,23 @@ query($searchQuery: String!, $endCursor: String) {
 query_vulns() {
 
   local owner=""
-  local repo=""
   local output_format="table"
   owner=$(helper::gh_whoami)
-  if helper::is_repo; then
-    repo=$(helper::repo_info)
-  fi
   while getopts 'o:ja' flag; do
     case "${flag}" in
     j) output_format="json" ;;
     o)
       # Explicit owner then you know what you're doing?
       owner="${OPTARG}"
-      repo=""
       ;;
-    a) repo="" ;;
+    a) ;;
     *) query_help ;;
     esac
   done
 
   local queryString=""
 
-  if [[ -n "$repo" ]]; then
-    queryString="repo:$repo"
-  else
-    queryString="owner:$owner fork:true archived:false"
-  fi
+  queryString="owner:$owner fork:true archived:false"
   case $output_format in
   json)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
