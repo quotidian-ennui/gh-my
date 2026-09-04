@@ -2,7 +2,11 @@
 set -eo pipefail
 
 BASEDIR=$(dirname "$0")
-ACTION_LIST=""
+ACTION_LIST="orgs|"
+
+query_orgs() {
+  helper::my_github_orgs
+}
 
 source_actions() {
   for f in "$BASEDIR"/includes/query_*; do
@@ -31,6 +35,7 @@ for arg in "$@"; do
   shift
   case "$arg" in
   --jsonlines | --jsonl) set -- "$@" '-j' ;;
+  --help | help) set -- "$@" '-h' ;;
   *) set -- "$@" "$arg" ;;
   esac
 done

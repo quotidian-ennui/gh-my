@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+query_notifs_help() {
+  cat <<EOF
+
+Usage: gh my notifs [options]
+  list unread notifications
+
+  -n : the ID to mark as read (-n 7235590448)
+  -a : Mark all notifications as read
+EOF
+  exit 2
+}
+
 query_notifs() {
   local notif_template='{{tablerow "ID" "Reason" "When" "Repo" "Title" -}}
 {{ range . -}}
@@ -8,11 +20,12 @@ query_notifs() {
 
   local notif_id=''
   local mark_all_as_read=''
-  while getopts 'n:a' flag; do
+  while getopts 'n:ah' flag; do
     case "${flag}" in
     n) notif_id="${OPTARG}" ;;
     a) mark_all_as_read="yes" ;;
-    *) query_help ;;
+    h) query_notifs_help ;;
+    *) query_notifs_help ;;
     esac
   done
 

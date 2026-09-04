@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
+
+query_workload_help() {
+  cat <<EOF
+
+Usage: gh my workload [options]
+  list PRs and issues where you are the assignee
+
+  -j : output each row as a JSON object.
+       (--jsonlines is also accepted)
+EOF
+  exit 2
+}
+
 query_workload() {
+  for arg in "$@"; do
+    case "$arg" in
+    -h) query_workload_help ;;
+    esac
+  done
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String){

@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 # Query your repos for workflow failures
+
+query_failures_help() {
+  cat <<EOF
+
+Usage: gh my failures [options]
+  show workflow failures in your personal repositories in the last 14 days
+
+  uses 'date' so any gnu date string is valid
+  -d : the date string (default is "14 days ago")
+  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
+                  and foolish move, so you have been warned.
+                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
+                  (space separated), but the filter isn't that sophisticated.
+EOF
+  exit 2
+}
+
 query_failures() {
   local since
   local since_dateonly
@@ -19,11 +36,12 @@ query_failures() {
       ;;
     esac
   done
-  while getopts 'd:g' flag; do
+  while getopts 'd:gh' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
     g) query_all_orgs='true' ;;
-    *) query_help ;;
+    h) query_failures_help ;;
+    *) query_failures_help ;;
     esac
   done
   since_dateonly=$(date --date="$since" '+%Y-%m-%d')

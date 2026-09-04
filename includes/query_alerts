@@ -16,8 +16,25 @@ ALERTS_JSON_REST_JQ='
   | @tsv
 '
 
+query_alerts_help() {
+  cat <<EOF
+
+Usage: gh my alerts
+  show open dependabot alerts in the current repository
+  This sub-command requires repository context.
+EOF
+  exit 2
+}
+
 query_alerts() {
   local repo_info=""
+
+  while getopts 'h' flag; do
+    case "${flag}" in
+    h) query_alerts_help ;;
+    *) query_alerts_help ;;
+    esac
+  done
 
   if ! helper::is_repo; then
     echo "alerts requires the current directory to be a github repo"

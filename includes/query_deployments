@@ -1,15 +1,29 @@
 #!/usr/bin/env bash
 
+query_deployments_help() {
+  cat <<EOF
+
+Usage: gh my deployments [options]
+  list deployments awaiting action on the default branch
+
+  -o : the organisation (e.g. -o my-company)
+  -t : the topic  (e.g. -t my-terraform-repos)
+  -r : a specific repository, but why not use gh run list instead?
+EOF
+  exit 2
+}
+
 query_deployments() {
   local org=''
   local topic=''
   local repo=''
-  while getopts 'o:t:r:' flag; do
+  while getopts 'o:t:r:h' flag; do
     case "${flag}" in
     o) org="org:${OPTARG}" ;;
     t) topic="topic:${OPTARG}" ;;
     r) repo="${OPTARG}" ;;
-    *) query_help ;;
+    h) query_deployments_help ;;
+    *) query_deployments_help ;;
     esac
   done
   if [[ "$org" == "" && $topic = "" && $repo = "" ]]; then

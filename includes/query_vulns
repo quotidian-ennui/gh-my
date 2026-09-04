@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+query_vulns_help() {
+  cat <<EOF
+
+Usage: gh my vulns [options]
+  show vulnerability alerts from dependabot in the current repository
+  or your personal repositories
+
+  -a : vulnerabilities in all your personal repositories
+       This is the default behaviour if your current location
+       is not a github repo and should be explicitly set if
+       it is.
+  -o : the owner (e.g. -o my-company | -o my-user)
+       default is whatever 'gh config get user -h github.com' returns
+       ** Viewing security alerts implies permissions
+  -j : output each row as a JSON object.
+EOF
+  exit 2
+}
+
 # shellcheck disable=SC2016
 VULNS_JSON_JQ='
 .data.search.edges[] | .node.vulnerabilityAlerts.nodes.[] |
@@ -85,7 +104,7 @@ query_vulns() {
   local owner=""
   local output_format="table"
   owner=$(helper::gh_whoami)
-  while getopts 'o:ja' flag; do
+  while getopts 'o:jah' flag; do
     case "${flag}" in
     j) output_format="json" ;;
     o)
@@ -93,7 +112,8 @@ query_vulns() {
       owner="${OPTARG}"
       ;;
     a) ;;
-    *) query_help ;;
+    h) query_vulns_help ;;
+    *) query_vulns_help ;;
     esac
   done
 

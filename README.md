@@ -31,7 +31,7 @@ gh extension install quotidian-ennui/gh-my
 ```text
 bsh ❯ gh my
 
-Usage: gh my [alerts|deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
+Usage: gh my [orgs|alerts|deployments|failures|help|issues|notifs|prs|report|reviews|vulns|workload] [options]
   alerts      : show open dependabot alerts in the current repository
   issues      : list issues in your personal repositories
   prs         : list PRs in the current repository or all your personal repos
@@ -44,68 +44,13 @@ Usage: gh my [alerts|deployments|failures|help|issues|notifs|prs|report|reviews|
   failures    : show workflow failures in your personal repositories in the last 14 days
   vulns       : show vulnerability alerts from dependabot in the current repository
                 or your personal repositories
+  orgs        : show the organisations you belong to
 
-'issues' can have its output in JSON format
-'reviews' can have its output in JSON format
-'workload' can have its output in JSON format
-  -j : output each row as a JSON object.
-       This is useful if you want to script & pipe the output.
-       (--jsonlines is also accepted)
+Use 'gh my <command> --help' for more information about a specific command.
 
-'prs' shows the PRs in the current repo by default.
-  -a            : PRs in all your personal repositories
-                  This is the default behaviour if your current location
-                  is not a github repo and should be explicitly set if
-                  it is.
-  -j            : output each row as a JSON object.
-  -o --org      : the PRs belonging to the associated organisation
-                  e.g. gh my prs -o my-company
-  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
-                  and foolish move, so you have been warned.
-                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
-                  (space separated), but the filter isn't that sophisticated.
-  -u            : reduce the output so that the URL is primary
-                  maybe you dislike 'gh my prs -j | jq -r '.url' | xargs -r L1 gh pr view -w'
-
-Environment for 'prs':
-  'GH_MY_PRS_QUERY_EXTRAS' - this environment variable is appended to the prs query so you
-                             can do something like "-label:backlog" to filter the query.
-
-'deployments' needs more filters
-  -o : the organisation (e.g. -o my-company)
-  -t : the topic  (e.g. -t my-terraform-repos)
-  -r : a specific repository, but why not use gh run list instead?
-
-'report' uses 'date' so any gnu date string is valid
-  -d : the date string (default is "14 days ago")
-  -q : omit the table headers
-  -a : use 'author' instead of 'involves'
-  -v : everything involving your user (e.g. where you're a CODEOWNER)
-  -j : output each row as a JSON object.
-
-'failures' uses 'date' so any gnu date string is valid
-  -d : the date string (default is "14 days ago")
-  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
-                  and foolish move, so you have been warned.
-                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
-                  (space separated), but the filter isn't that sophisticated.
-
-'notifs' can also mark them as read
-  -n : the ID to mark as read (-n 7235590448)
-  -a : Mark all notifications as read
-
-'alerts' shows open dependabot alerts in the current repo
-       This sub-command requires repository context.
-
-'vulns' shows vulnerabilties in your current repo by default
-  -a : vulnerabilities in all your personal repositories
-       This is the default behaviour if your current location
-       is not a github repo and should be explicitly set if
-       it is.
-  -o : the owner (e.g. -o my-company | -o my-user)
-       default is whatever 'gh config get user -h github.com' returns
-       ** Viewing security alerts implies permissions
-  -j : output each row as a JSON object.
+Environment Variables:
+GH_MY_PRS_QUERY_EXTRAS : additional query to add to 'my prs'
+GH_MY_IGNORE_ORGS      : to ignore organisations that you belong to
 ```
 
 ```bash

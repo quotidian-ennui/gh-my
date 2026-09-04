@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 
+query_reviews_help() {
+  cat <<EOF
+
+Usage: gh my reviews [options]
+  list PRs where you've been asked for a review
+
+  -j : output each row as a JSON object.
+       (--jsonlines is also accepted)
+EOF
+  exit 2
+}
+
 query_reviews() {
+  for arg in "$@"; do
+    case "$arg" in
+    -h) query_reviews_help ;;
+    esac
+  done
   # shellcheck disable=SC2016
   local query='
 query ($endCursor: String){
