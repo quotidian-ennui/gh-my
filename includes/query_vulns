@@ -108,7 +108,6 @@ query_vulns() {
   local owner=""
   local output_format="table"
   local query_all_orgs="false"
-  local my_orgs=""
   local queryString=""
   owner=$(helper::gh_whoami)
   while getopts 'go:jah' flag; do
@@ -126,22 +125,7 @@ query_vulns() {
   done
 
   if [[ "$query_all_orgs" == "true" ]]; then
-    my_orgs=$(helper::my_github_orgs)
-    for org in $my_orgs; do
-      queryString="owner:$org fork:true archived:false"
-      if [[ "$output_format" != "json" ]]; then
-        echo -e "\n🏛️ $org"
-      fi
-      case $output_format in
-      json)
-        gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
-        ;;
-      *)
-        gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
-        ;;
-      esac
-    done <<<"$my_orgs"
-    echo ""
+    helper::for_each_my_github_org "$output_format" _vulns_query_org "$output_format"
   else
     queryString="owner:$owner fork:true archived:false"
     case $output_format in
@@ -153,4 +137,20 @@ query_vulns() {
       ;;
     esac
   fi
+}
+
+_vulns_query_org() {
+  local org="$1"
+  local output_format="$2"
+  local queryString=""
+
+  queryString="owner:$org fork:true archived:false"
+  case $output_format in
+  json)
+    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+    ;;
+  esac
 }

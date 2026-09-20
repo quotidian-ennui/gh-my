@@ -23,16 +23,6 @@ query_deployments() {
   local repo=''
   local query_all_orgs='false'
 
-  for arg in "$@"; do
-    shift
-    case "$arg" in
-    '--all-orgs' | '--allorgs')
-      set -- "$@" '-g'
-      ;;
-    *) set -- "$@" "$arg" ;;
-    esac
-  done
-
   while getopts 'go:t:r:h' flag; do
     case "${flag}" in
     g) query_all_orgs='true' ;;
@@ -49,17 +39,20 @@ query_deployments() {
   if [[ $repo != "" ]]; then
     internal::repo_deploys "$repo"
   elif [[ "$query_all_orgs" == 'true' ]]; then
-    my_orgs=$(helper::my_github_orgs)
-    for github_org in $my_orgs; do
-      queryString="org:${github_org} $topic"
-      echo -e "\n🏛️ $github_org"
-      internal::org_deploys "$queryString"
-    done <<<"$my_orgs"
-    echo ""
+    helper::for_each_my_github_org table _deployments_query_org "$topic"
   else
     queryString="$org $topic"
     internal::org_deploys "$queryString"
   fi
+}
+
+_deployments_query_org() {
+  local org="$1"
+  local topic="$2"
+  local queryString=""
+
+  queryString="org:${org} $topic"
+  internal::org_deploys "$queryString"
 }
 
 # Query a specific repo for any deployments that are in a "waiting" state
