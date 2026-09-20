@@ -8,6 +8,10 @@ Usage: gh my vulns [options]
   show vulnerability alerts from dependabot in the current repository
   or your personal repositories
 
+  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
+                  and foolish move, so you have been warned.
+                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
+                  (space separated), but the filter isn't that sophisticated.
   -a : vulnerabilities in all your personal repositories
        This is the default behaviour if your current location
        is not a github repo and should be explicitly set if
@@ -103,9 +107,13 @@ query_vulns() {
 
   local owner=""
   local output_format="table"
+  local query_all_orgs="false"
+  local my_orgs=""
+  local queryString=""
   owner=$(helper::gh_whoami)
-  while getopts 'o:jah' flag; do
+  while getopts 'go:jah' flag; do
     case "${flag}" in
+    g) query_all_orgs="true" ;;
     j) output_format="json" ;;
     o)
       # Explicit owner then you know what you're doing?
@@ -117,15 +125,32 @@ query_vulns() {
     esac
   done
 
-  local queryString=""
-
-  queryString="owner:$owner fork:true archived:false"
-  case $output_format in
-  json)
-    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
-    ;;
-  *)
-    gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
-    ;;
-  esac
+  if [[ "$query_all_orgs" == "true" ]]; then
+    my_orgs=$(helper::my_github_orgs)
+    for org in $my_orgs; do
+      queryString="owner:$org fork:true archived:false"
+      if [[ "$output_format" != "json" ]]; then
+        echo -e "\n🏛️ $org"
+      fi
+      case $output_format in
+      json)
+        gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
+        ;;
+      *)
+        gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+        ;;
+      esac
+    done <<<"$my_orgs"
+    echo ""
+  else
+    queryString="owner:$owner fork:true archived:false"
+    case $output_format in
+    json)
+      gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
+      ;;
+    *)
+      gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+      ;;
+    esac
+  fi
 }

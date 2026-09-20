@@ -34,6 +34,7 @@ fi
 for arg in "$@"; do
   shift
   case "$arg" in
+  --all-orgs | --allorgs) set -- "$@" '-g' ;;
   --jsonlines | --jsonl) set -- "$@" '-j' ;;
   --help | help) set -- "$@" '-h' ;;
   *) set -- "$@" "$arg" ;;
