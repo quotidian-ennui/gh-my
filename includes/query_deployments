@@ -13,6 +13,8 @@ Usage: gh my deployments [options]
   -o : the organisation (e.g. -o my-company)
   -t : the topic  (e.g. -t my-terraform-repos)
   -r : a specific repository, but why not use gh run list instead?
+  -j : output each row as a JSON object.
+       (--jsonlines is also accepted)
 EOF
   exit 2
 }
@@ -22,13 +24,15 @@ query_deployments() {
   local topic=''
   local repo=''
   local query_all_orgs='false'
+  local output_format='table'
 
-  while getopts 'go:t:r:h' flag; do
+  while getopts 'go:t:r:jh' flag; do
     case "${flag}" in
     g) query_all_orgs='true' ;;
     o) org="org:${OPTARG}" ;;
     t) topic="topic:${OPTARG}" ;;
     r) repo="${OPTARG}" ;;
+    j) output_format='json' ;;
     h) query_deployments_help ;;
     *) query_deployments_help ;;
     esac
@@ -37,38 +41,65 @@ query_deployments() {
     query_help
   fi
   if [[ $repo != "" ]]; then
-    internal::repo_deploys "$repo"
+    internal::repo_deploys "$repo" "$output_format"
   elif [[ "$query_all_orgs" == 'true' ]]; then
-    helper::for_each_my_github_org table _deployments_query_org "$topic"
+    helper::for_each_my_github_org "$output_format" _deployments_query_org "$topic" "$output_format"
   else
     queryString="$org $topic"
-    internal::org_deploys "$queryString"
+    internal::org_deploys "$queryString" "$output_format"
   fi
 }
 
 _deployments_query_org() {
   local org="$1"
   local topic="$2"
+  local output_format="$3"
   local queryString=""
 
   queryString="org:${org} $topic"
-  internal::org_deploys "$queryString"
+  internal::org_deploys "$queryString" "$output_format"
 }
 
 # Query a specific repo for any deployments that are in a "waiting" state
 internal::repo_deploys() {
   local repo="$1"
+  local output_format="$2"
   # shellcheck disable=SC2016
   local deploy_template='{{tablerow "ID" "URL" "Branch" "When" -}}
 {{ range . -}}
 {{tablerow (.databaseId | autocolor "green") (.url | autocolor "cyan") (.headBranch | autocolor "yellow") (timeago .startedAt) -}}
 {{end -}}'
-  gh run list --repo "$repo" --json "databaseId,url,headBranch,startedAt" --template "$deploy_template" -s "waiting"
+  case $output_format in
+  json)
+    gh run list --repo "$repo" --json "databaseId,url,headBranch,startedAt" -s "waiting" --jq '.[] | {id: .databaseId, url: .url, branch: .headBranch, startedAt: .startedAt}' | jq -c "."
+    ;;
+  *)
+    gh run list --repo "$repo" --json "databaseId,url,headBranch,startedAt" --template "$deploy_template" -s "waiting"
+    ;;
+  esac
 }
 
 # Query the org, (filtering by topic) listing deployments in a waiting state that on the default branch
+# shellcheck disable=SC2016
+DEPLOYS_JSON_JQ='
+.data.search.edges[] | .node as $repo |
+$repo.defaultBranchRef.target.checkSuites.nodes[] |
+.workflowRun as $run |
+$run.checkSuite.checkRuns.nodes[] |
+{
+  "id": $run.databaseId,
+  "url": $run.url,
+  "branch": $repo.defaultBranchRef.name,
+  "repository": $repo.nameWithOwner,
+  "environment": .pendingDeploymentRequest.environment.name,
+  "actionable": .pendingDeploymentRequest.currentUserCanApprove,
+  "startedAt": .startedAt
+}
+'
+
 internal::org_deploys() {
   local queryString="$1"
+  local output_format="$2"
   # shellcheck disable=SC2016
   local deploy_template='{{tablerow "ID" "URL" "Branch" "Repo" "Env" "Actionable" "When" -}}
 {{range(pluck "node" .data.search.edges) -}}
@@ -131,5 +162,12 @@ query ($queryString: String!, $endCursor: String) {
     }
   }
 }'
-  gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$deploy_template"
+  case $output_format in
+  json)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --jq "$DEPLOYS_JSON_JQ" | jq -c "."
+    ;;
+  *)
+    gh api graphql --paginate -F queryString="$queryString" --raw-field query="$(helper::compressQuery "$query")" --template "$deploy_template"
+    ;;
+  esac
 }

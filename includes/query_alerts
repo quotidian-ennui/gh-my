@@ -16,21 +16,40 @@ ALERTS_JSON_REST_JQ='
   | @tsv
 '
 
+#shellcheck disable=SC2016
+ALERTS_JSONLINES_JQ='
+  .[] | select(.state == "open") |
+    {
+      "id": .number,
+      "state": (.state // ""),
+      "severity": (.security_advisory.severity // ""),
+      "package": (.dependency.package.name // ""),
+      "cve": (.security_advisory.cve_id // ""),
+      "ghsa": (.security_advisory.ghsa_id // ""),
+      "url": "https://github.com/\($repo_info)/security/dependabot/\(.number)"
+    }
+'
+
 query_alerts_help() {
   cat <<EOF
 
 Usage: gh my alerts
   show open dependabot alerts in the current repository
   This sub-command requires repository context.
+
+  -j : output each row as a JSON object.
+       (--jsonlines is also accepted)
 EOF
   exit 2
 }
 
 query_alerts() {
   local repo_info=""
+  local output_format="table"
 
-  while getopts 'h' flag; do
+  while getopts 'jh' flag; do
     case "${flag}" in
+    j) output_format="json" ;;
     h) query_alerts_help ;;
     *) query_alerts_help ;;
     esac
@@ -43,7 +62,15 @@ query_alerts() {
 
   repo_info=$(helper::repo_info)
 
-  helper::gh_api "repos/:owner/:repo/dependabot/alerts" \
-    | jq -r --arg repo_info "$repo_info" "$ALERTS_JSON_REST_JQ" \
-    | column -t -s $'\t' -N  "ID,STATE,SEVERITY,PACKAGE,CVE,GHSA,URL" --table-truncate URL
+  case $output_format in
+  json)
+    helper::gh_api "repos/:owner/:repo/dependabot/alerts" \
+      | jq -c --arg repo_info "$repo_info" "$ALERTS_JSONLINES_JQ"
+    ;;
+  *)
+    helper::gh_api "repos/:owner/:repo/dependabot/alerts" \
+      | jq -r --arg repo_info "$repo_info" "$ALERTS_JSON_REST_JQ" \
+      | column -t -s $'\t' -N  "ID,STATE,SEVERITY,PACKAGE,CVE,GHSA,URL" --table-truncate URL
+    ;;
+  esac
 }

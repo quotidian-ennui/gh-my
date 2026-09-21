@@ -13,6 +13,8 @@ Usage: gh my failures [options]
                   and foolish move, so you have been warned.
                   To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
                   (space separated), but the filter isn't that sophisticated.
+  -j : output each row as a JSON object.
+       (--jsonlines is also accepted)
 EOF
   exit 2
 }
@@ -24,16 +26,19 @@ query_failures() {
   local gh_repos
   local query_all_orgs
   since='14 days ago'
-  while getopts 'd:gh' flag; do
+  local output_format='table'
+  while getopts 'd:gjh' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
     g) query_all_orgs='true' ;;
+    j) output_format='json' ;;
     h) query_failures_help ;;
     *) query_failures_help ;;
     esac
   done
   since_dateonly=$(date --date="$since" '+%Y-%m-%d')
   jq_filter='.workflow_runs[] | "\(.repository.name)|\(.name)|\(.html_url)|\(.created_at | fromdateiso8601 | strflocaltime("%d %b %Y"))"'
+  jsonlines_filter='.workflow_runs[] | {repository: .repository.full_name, workflow: .name, url: .html_url, created_at: .created_at}'
 
   if [[ "$query_all_orgs" == 'true' ]]; then
     gh_repos=$(helper::list_my_org_repos)
@@ -41,10 +46,20 @@ query_failures() {
     gh_repos=$(gh repo list --json "nameWithOwner" -q ".[] | .nameWithOwner")
   fi
 
-  {
+  case $output_format in
+  json)
     for gh_repo in $gh_repos; do
       failed_workflows=$(helper::gh_api "repos/$gh_repo/actions/runs?status=failure&created=>$since_dateonly")
-      echo "$failed_workflows" | jq -r "$jq_filter"
+      echo "$failed_workflows" | jq -c "$jsonlines_filter"
     done
-  } | column -s'|' -t -N "REPOSITORY,WORKFLOW,URL,WHEN"
+    ;;
+  *)
+    {
+      for gh_repo in $gh_repos; do
+        failed_workflows=$(helper::gh_api "repos/$gh_repo/actions/runs?status=failure&created=>$since_dateonly")
+        echo "$failed_workflows" | jq -r "$jq_filter"
+      done
+    } | column -s'|' -t -N "REPOSITORY,WORKFLOW,URL,WHEN"
+    ;;
+  esac
 }
