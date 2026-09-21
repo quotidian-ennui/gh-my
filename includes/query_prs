@@ -187,9 +187,6 @@ query_prs() {
   for arg in "$@"; do
     shift
     case "$arg" in
-    '--all-orgs' | '--allorgs')
-      set -- "$@" '-g'
-      ;;
     '--org')
       set -- "$@" '-o'
       ;;
@@ -233,16 +230,18 @@ query_prs() {
   done
 
   if [[ "$queryAllOrgs" == "true" ]]; then
-    myOrgs=$(helper::my_github_orgs)
-    for org in $myOrgs; do
-      queryString="$(_prs_org_query "$org")"
-      if [[ "$outputFormat" != "json" ]]; then
-        echo -e "\n🏛️ $org"
-      fi
-      _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
-    done <<<"$myOrgs"
-    echo ""
+    helper::for_each_my_github_org "$outputFormat" _prs_query_org "$urlFirst"
   else
     _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
   fi
+}
+
+_prs_query_org() {
+  local org="$1"
+  local outputFormat="$2"
+  local urlFirst="$3"
+  local queryString=""
+
+  queryString="$(_prs_org_query "$org")"
+  _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
 }

@@ -23,19 +23,7 @@ query_failures() {
   local jq_filter
   local gh_repos
   local query_all_orgs
-  local my_orgs
   since='14 days ago'
-  for arg in "$@"; do
-    shift
-    case "$arg" in
-    '--all-orgs' | '--allorgs')
-      set -- "$@" '-g'
-      ;;
-    *)
-      set -- "$@" "$arg"
-      ;;
-    esac
-  done
   while getopts 'd:gh' flag; do
     case "${flag}" in
     d) since="${OPTARG}" ;;
@@ -48,12 +36,7 @@ query_failures() {
   jq_filter='.workflow_runs[] | "\(.repository.name)|\(.name)|\(.html_url)|\(.created_at | fromdateiso8601 | strflocaltime("%d %b %Y"))"'
 
   if [[ "$query_all_orgs" == 'true' ]]; then
-    my_orgs=$(helper::my_github_orgs)
-    gh_repos=$(
-      for org in $my_orgs; do
-        gh repo list "$org" --limit 1000 --json "nameWithOwner" -q ".[] | .nameWithOwner"
-      done
-    )
+    gh_repos=$(helper::list_my_org_repos)
   else
     gh_repos=$(gh repo list --json "nameWithOwner" -q ".[] | .nameWithOwner")
   fi

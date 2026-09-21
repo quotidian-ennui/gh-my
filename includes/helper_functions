@@ -79,6 +79,31 @@ helper::my_github_orgs() {
   echo "${filtered_orgs[@]}"
 }
 
+helper::for_each_my_github_org() {
+  local output_format="$1"
+  local callback="$2"
+  local myorgs=""
+  shift 2
+
+  myorgs=$(helper::my_github_orgs)
+  for org in $myorgs; do
+    if [[ "$output_format" != "json" ]]; then
+      echo -e "\n🏛️ $org"
+    fi
+    "$callback" "$org" "$@"
+  done <<<"$myorgs"
+  echo ""
+}
+
+helper::list_my_org_repos() {
+  local myorgs=""
+
+  myorgs=$(helper::my_github_orgs)
+  for org in $myorgs; do
+    gh repo list "$org" --limit 1000 --json "nameWithOwner" -q ".[] | .nameWithOwner"
+  done <<<"$myorgs"
+}
+
 helper::gh_whoami() {
   local me=""
   me=$(gh config get user -h github.com 2>/dev/null || true)

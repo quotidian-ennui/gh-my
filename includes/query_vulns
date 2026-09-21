@@ -8,6 +8,10 @@ Usage: gh my vulns [options]
   show vulnerability alerts from dependabot in the current repository
   or your personal repositories
 
+  -g --all-orgs : ALL organisations that you belong to. This is potentially a time-consuming
+                  and foolish move, so you have been warned.
+                  To mitigate, you can also set 'GH_MY_IGNORE_ORGS' as an additional filter
+                  (space separated), but the filter isn't that sophisticated.
   -a : vulnerabilities in all your personal repositories
        This is the default behaviour if your current location
        is not a github repo and should be explicitly set if
@@ -103,9 +107,12 @@ query_vulns() {
 
   local owner=""
   local output_format="table"
+  local query_all_orgs="false"
+  local queryString=""
   owner=$(helper::gh_whoami)
-  while getopts 'o:jah' flag; do
+  while getopts 'go:jah' flag; do
     case "${flag}" in
+    g) query_all_orgs="true" ;;
     j) output_format="json" ;;
     o)
       # Explicit owner then you know what you're doing?
@@ -117,9 +124,27 @@ query_vulns() {
     esac
   done
 
+  if [[ "$query_all_orgs" == "true" ]]; then
+    helper::for_each_my_github_org "$output_format" _vulns_query_org "$output_format"
+  else
+    queryString="owner:$owner fork:true archived:false"
+    case $output_format in
+    json)
+      gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
+      ;;
+    *)
+      gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --template="$VULNS_REPORT_TEMPLATE"
+      ;;
+    esac
+  fi
+}
+
+_vulns_query_org() {
+  local org="$1"
+  local output_format="$2"
   local queryString=""
 
-  queryString="owner:$owner fork:true archived:false"
+  queryString="owner:$org fork:true archived:false"
   case $output_format in
   json)
     gh api graphql --paginate -F searchQuery="$queryString" --raw-field query="$(helper::compressQuery "$VULNS_GRAPHQL_QUERY")" --jq="$VULNS_JSON_JQ" | jq -c "."
