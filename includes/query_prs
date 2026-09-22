@@ -230,15 +230,7 @@ query_prs() {
   done
 
   if [[ "$queryAllOrgs" == "true" ]]; then
-    myOrgs=$(helper::my_github_orgs)
-    for org in $myOrgs; do
-      queryString="$(_prs_org_query "$org")"
-      if [[ "$outputFormat" != "json" ]]; then
-        echo -e "\n🏛️ $org"
-      fi
-      _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
-    done <<<"$myOrgs"
-    echo ""
+    helper::for_each_my_github_org "$outputFormat" _prs_query_org "$outputFormat" "$urlFirst"
   else
     _prs_do_query "$queryString" "$outputFormat" "$urlFirst"
   fi
