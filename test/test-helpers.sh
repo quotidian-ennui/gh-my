@@ -4,8 +4,10 @@ TEST_SUITES=()
 
 register_test_suite() {
   local suite_runner="$1"
+  local suite_file=""
 
-  TEST_SUITES+=("$suite_runner")
+  suite_file=$(basename "${BASH_SOURCE[1]}")
+  TEST_SUITES+=("${suite_file}:${suite_runner}")
 }
 
 assert_eq() {

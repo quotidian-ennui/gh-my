@@ -14,13 +14,21 @@ for test_file in "$TEST_DIR"/*_test.sh; do
   source "$test_file"
 done
 
-run_test_suites() {
+_run_test_suites() {
+  local suite_entry=""
+  local suite_file=""
+
   for suite_runner in "${TEST_SUITES[@]}"; do
+    suite_entry="$suite_runner"
+    suite_file="${suite_entry%%:*}"
+    suite_runner="${suite_entry#*:}"
+    echo
+    echo "## ${suite_file}"
     "$suite_runner"
   done
 }
 
-write_github_summary() {
+_write_test_github_summary() {
   local log_file="$1"
   local pass_count=""
   local fail_count=""
@@ -49,17 +57,17 @@ main() {
 
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     log_file=$(mktemp)
-    if run_test_suites | tee "$log_file"; then
+    if _run_test_suites | tee "$log_file"; then
       test_status=0
     else
       test_status=$?
     fi
-    write_github_summary "$log_file"
+    _write_test_github_summary "$log_file"
     rm -f "$log_file"
     return "$test_status"
+  else
+    _run_test_suites
   fi
-
-  run_test_suites
 }
 
 {
