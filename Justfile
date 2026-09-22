@@ -1,28 +1,37 @@
-set positional-arguments := true
-set unstable := true
-set script-interpreter := ['/usr/bin/env', 'bash']
-alias format:=fmt
+set positional-arguments
+set unstable
+set script-interpreter := ['/usr/bin/env', 'bash', '-eo', 'pipefail']
 
-# show recipes
 [private]
 @help:
-  just --list --list-prefix "  "
+    just --list --list-prefix "  "
 
-# Run shellcheck + shfmt
+[doc("Run shellcheck + shfmt")]
 lint: fmt shellcheck
 
-# Run shellcheck
-@shellcheck:
-  shellcheck gh-my
-  shellcheck includes/query_*
-  shellcheck includes/helper_*
+[doc("Run unit tests")]
+[script]
+test:
+    test/test.sh
 
-# Run shfmt
+[doc("Run shellcheck")]
+@shellcheck:
+    shellcheck gh-my
+    shellcheck includes/query_*
+    shellcheck includes/helper_*
+    shellcheck test/*.sh
+
+[doc("Run shfmt")]
 [script]
 fmt:
-  #
-  set -eo pipefail
-  shfmt -i 2 -w gh-my
-  for file in "{{ justfile_directory() }}"/includes/*; do
-    shfmt -i 2 -w "$file"
-  done
+    #
+    set -eo pipefail
+    shfmt -i 2 -w gh-my
+    for file in "{{ justfile_directory() }}"/includes/*; do
+      shfmt -i 2 -w "$file"
+    done
+    for file in "{{ justfile_directory() }}"/test/*.sh; do
+      shfmt -i 2 -w "$file"
+    done
+
+alias format := fmt
