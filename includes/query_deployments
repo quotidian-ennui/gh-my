@@ -81,7 +81,7 @@ internal::repo_deploys() {
 
 # Query the org, (filtering by topic) listing deployments in a waiting state that on the default branch
 # shellcheck disable=SC2016
-DEPLOYS_JSON_JQ='
+readonly DEPLOYS_JSON_JQ='
 .data.search.edges[] | .node as $repo |
 $repo.defaultBranchRef.target.checkSuites.nodes[] |
 .workflowRun as $run |
@@ -118,7 +118,7 @@ internal::org_deploys() {
 {{end -}}
 '
   # shellcheck disable=SC2016
-  query='
+  local query='
 query ($queryString: String!, $endCursor: String) {
   search(query: $queryString, type: REPOSITORY, first: 100, after: $endCursor) {
     edges {

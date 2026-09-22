@@ -2,7 +2,7 @@
 set -eo pipefail
 
 #shellcheck disable=SC2016
-ALERTS_JSON_REST_JQ='
+readonly ALERTS_JSON_REST_JQ='
   .[] | select(.state == "open") |
     [
       (.number | tostring),
@@ -17,7 +17,7 @@ ALERTS_JSON_REST_JQ='
 '
 
 #shellcheck disable=SC2016
-ALERTS_JSONLINES_JQ='
+readonly ALERTS_JSONLINES_JQ='
   .[] | select(.state == "open") |
     {
       "id": .number,

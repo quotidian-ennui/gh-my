@@ -27,11 +27,11 @@ EOF
   exit 2
 }
 
-PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
-PR_ORG_REPOS_QUERY="is:open is:pr org:__MYORG__ archived:false"
+readonly PR_ALL_REPOS_QUERY="is:open is:pr user:@me archived:false"
+readonly PR_ORG_REPOS_QUERY="is:open is:pr org:__MYORG__ archived:false"
 #shellcheck disable=SC2034
 #shellcheck disable=SC2016
-PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
+readonly PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ $status := "❔" -}}
   {{ $review := "🌤️" -}}
@@ -67,7 +67,7 @@ PR_QUERY_TABLE_FORMAT='{{tablerow "" "Num" "Title" "Who" "URL" "When" -}}
 
 # Where the URL is more important.
 #shellcheck disable=SC2016
-PR_QUERY_URL_FORMAT='{{tablerow "" "URL" "Title" "Who" -}}
+readonly PR_QUERY_URL_FORMAT='{{tablerow "" "URL" "Title" "Who" -}}
   {{range(pluck "node" .data.search.edges) -}}
   {{ $status := "❔" -}}
   {{ $review := "🌤️" -}}
@@ -102,7 +102,7 @@ PR_QUERY_URL_FORMAT='{{tablerow "" "URL" "Title" "Who" -}}
   {{tablerender}}'
 
 # shellcheck disable=SC2016
-QUERY_PR_GRAPHQL='
+readonly QUERY_PR_GRAPHQL='
 query ($queryString: String!,$endCursor: String) {
   search(query: $queryString, type: ISSUE, after: $endCursor, first: 50) {
     edges {
@@ -133,7 +133,7 @@ query ($queryString: String!,$endCursor: String) {
     }
   }
 }'
-QUERY_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
+readonly QUERY_JQ_FILTER='.data.search.edges[] | .node | { "number":.number, "title": .title, "login": .author.login, "statusRollup": .statusCheckRollup.state, "reviewDecision": .reviewDecision, "isDraft": .isDraft, "url": .url, "createdAt": .createdAt}'
 
 _prs_repo_query() {
   local gitRemote=""
