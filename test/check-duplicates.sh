@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 SELF_PATH="$REPO_ROOT/test/check-duplicates.sh"
 TEST_RUNNER_PATH="$REPO_ROOT/test/test.sh"
+source "$REPO_ROOT/test/test-helpers.sh"
 
 _should_skip() {
   local target_file="$1"
@@ -44,8 +45,27 @@ _record_file_functions() {
   done < <(_collect_file_functions "$target_file")
 }
 
-main() {
+_write_github_summary() {
+  local log_file="$1"
+  local exitcode="$2"
+
+  {
+    echo '## Duplicate Function Check Summary'
+    echo
+    echo "- Exit Code: ${exitcode}"
+    echo
+    echo '<details><summary>Output</summary>'
+    echo
+    echo '```text'
+    cat "$log_file"
+    echo '```'
+    echo '</details>'
+  } >>"$GITHUB_STEP_SUMMARY"
+}
+
+_run_check_duplicates() {
   local target_file=""
+  local status=0
   declare -A seen=()
   declare -A source_of=()
 
@@ -54,10 +74,14 @@ main() {
       continue
     fi
 
-    _record_file_functions "$target_file"
+    if ! _record_file_functions "$target_file"; then
+      status=1
+    fi
   done
+
+  return "$status"
 }
 
 {
-  main
+  with_github_step_summary _run_check_duplicates _write_github_summary
 }

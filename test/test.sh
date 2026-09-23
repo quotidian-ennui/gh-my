@@ -28,8 +28,9 @@ _run_test_suites() {
   done
 }
 
-_write_test_github_summary() {
+_write_github_summary() {
   local log_file="$1"
+  local exitcode="${2:-0}"
   local pass_count=""
   local fail_count=""
 
@@ -49,27 +50,14 @@ _write_test_github_summary() {
     echo '```'
     echo '</details>'
   } >>"$GITHUB_STEP_SUMMARY"
-}
 
-main() {
-  local log_file=""
-  local test_status=0
-
-  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-    log_file=$(mktemp)
-    if _run_test_suites | tee "$log_file"; then
-      test_status=0
-    else
-      test_status=$?
-    fi
-    _write_test_github_summary "$log_file"
-    rm -f "$log_file"
-    return "$test_status"
-  else
-    _run_test_suites
+  if [[ "$fail_count" -gt 0 || "$exitcode" -ne 0 ]]; then
+    return 1
   fi
+
+  return 0
 }
 
 {
-  main "$@"
+  with_github_step_summary _run_test_suites _write_github_summary
 }
