@@ -25,7 +25,7 @@ EOF
 }
 
 # shellcheck disable=SC2016
-VULNS_JSON_JQ='
+readonly VULNS_JSON_JQ='
 .data.search.edges[] | .node.vulnerabilityAlerts.nodes.[] |
 {
     "repository": .repository.nameWithOwner,
@@ -39,7 +39,7 @@ VULNS_JSON_JQ='
 '
 
 # shellcheck disable=SC2016
-VULNS_REPORT_TEMPLATE='
+readonly VULNS_REPORT_TEMPLATE='
 {{tablerow "Repository" "Package" "CVE" "GHSA" "Severity" "URL" "Created" -}}
 {{range(pluck "node" .data.search.edges) -}}
 {{range .vulnerabilityAlerts.nodes -}}
@@ -61,7 +61,7 @@ VULNS_REPORT_TEMPLATE='
 {{end -}}
 '
 # shellcheck disable=SC2016
-VULNS_GRAPHQL_QUERY='
+readonly VULNS_GRAPHQL_QUERY='
 query($searchQuery: String!, $endCursor: String) {
   search(query: $searchQuery, type: REPOSITORY, first: 100, after: $endCursor) {
     edges {

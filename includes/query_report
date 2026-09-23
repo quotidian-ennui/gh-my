@@ -18,7 +18,7 @@ EOF
 }
 
 # shellcheck disable=SC2016
-REPORT_JSON_JQ='.data.search.edges[] | .node |
+readonly REPORT_JSON_JQ='.data.search.edges[] | .node |
   {
     "number":.number,
     "title": .title, "repository":
@@ -27,7 +27,7 @@ REPORT_JSON_JQ='.data.search.edges[] | .node |
     "updatedAt": .updatedAt
   }'
 # shellcheck disable=SC2016
-REPORT_GRAPHQL_QUERY='
+readonly REPORT_GRAPHQL_QUERY='
 query ($queryString: String!, $endCursor: String){
   search(query: $queryString,after: $endCursor, type: ISSUE, first: 50) {
     edges {
